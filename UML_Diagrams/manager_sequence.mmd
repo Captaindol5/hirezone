@@ -1,0 +1,9 @@
+sequenceDiagram
+    actor M as Manager
+    participant UI as Analytics UI
+    participant DB as Firebase DB
+    M->>UI: Access Analytics Portal
+    UI->>DB: Fetch Hiring Data & Metrics
+    DB-->>UI: Raw Data
+    UI->>UI: Calculate Conversion Rates
+    UI-->>M: Display Charts & Metrics

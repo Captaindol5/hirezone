@@ -1,0 +1,30 @@
+flowchart LR
+    %% Actors
+    Candidate(("Candidate\n(Actor)"))
+    HR(("HR Manager\n(Actor)"))
+    Interviewer(("Interviewer\n(Actor)"))
+    Manager(("Analytics Manager\n(Actor)"))
+
+    %% System
+    subgraph HireZone System
+        UC1([View Job Listings])
+        UC2([Apply for Jobs])
+        UC3([Track Application Status])
+        UC4([Manage Candidate Pipeline])
+        UC5([Schedule Interviews])
+        UC6([Submit Interview Feedback])
+        UC7([View Hiring Metrics])
+    end
+
+    %% Connections
+    Candidate --> UC1
+    Candidate --> UC2
+    Candidate --> UC3
+    
+    HR --> UC4
+    HR --> UC5
+    HR --> UC3
+    
+    Interviewer --> UC6
+    
+    Manager --> UC7

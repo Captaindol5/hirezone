@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor HR as HR Manager
+    participant UI as Pipeline UI
+    participant DB as Firebase DB
+    HR->>UI: Load Pipeline Kanban
+    UI->>DB: Fetch Candidates & Stages
+    DB-->>UI: Pipeline Data
+    HR->>UI: Drag Candidate to 'Interview' Stage
+    UI->>DB: Update Candidate Stage
+    DB-->>UI: Update Confirmed
+    HR->>UI: Schedule Interview Time
+    UI->>DB: Create Interview Record
+    DB-->>UI: Record Created

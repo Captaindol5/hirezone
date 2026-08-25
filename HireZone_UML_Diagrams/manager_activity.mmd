@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> OpenDashboard
+    OpenDashboard --> SelectDateRange
+    SelectDateRange --> GenerateReports
+    GenerateReports --> ViewMetrics
+    ViewMetrics --> [*]

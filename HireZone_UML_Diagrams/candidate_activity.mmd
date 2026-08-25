@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> ViewJobs
+    ViewJobs --> SelectJob
+    SelectJob --> FillApplication
+    FillApplication --> SubmitApplication
+    SubmitApplication --> TrackStatus
+    TrackStatus --> [*]

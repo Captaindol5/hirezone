@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor I as Interviewer
+    participant UI as Interviewer UI
+    participant DB as Firebase DB
+    I->>UI: View Assigned Interviews
+    UI->>DB: Fetch Interview Data
+    DB-->>UI: Interviews List
+    I->>UI: Select Candidate
+    UI->>DB: Fetch Candidate Details
+    DB-->>UI: Resume & Details
+    I->>UI: Submit Feedback & Score
+    UI->>DB: Save Feedback
+    DB-->>UI: Saved Confirmation

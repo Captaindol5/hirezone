@@ -1,0 +1,8 @@
+stateDiagram-v2
+    [*] --> ViewPipeline
+    ViewPipeline --> ReviewCandidate
+    ReviewCandidate --> MoveToNextStage
+    ReviewCandidate --> ScheduleInterview
+    ScheduleInterview --> NotifyCandidate
+    MoveToNextStage --> [*]
+    NotifyCandidate --> [*]

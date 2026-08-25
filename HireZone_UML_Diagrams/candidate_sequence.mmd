@@ -1,0 +1,13 @@
+sequenceDiagram
+    actor C as Candidate
+    participant UI as Portal UI
+    participant DB as Firebase DB
+    C->>UI: Browse Jobs
+    UI->>DB: Fetch Active Jobs
+    DB-->>UI: Jobs List
+    C->>UI: Apply for Job
+    UI->>DB: Save Application
+    DB-->>UI: Success
+    C->>UI: Check Status
+    UI->>DB: Fetch Status
+    DB-->>UI: Current Status
