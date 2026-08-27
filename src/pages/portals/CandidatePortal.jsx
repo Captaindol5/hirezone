@@ -92,10 +92,15 @@ const CandidatePortal = () => {
       {error && <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200">{error}</div>}
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-          <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="mb-5 flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Current role</p>
               <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">{candidate?.jobTitle || 'No active role found'}</h2>
+              {candidate && (
+                <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                  Active Stage: <span className="font-bold text-indigo-600 dark:text-indigo-400">{candidate.stageLabel}</span>
+                </p>
+              )}
             </div>
             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600">Status: {candidate ? candidate.status : 'Pending'}</span>
           </div>
@@ -165,36 +170,55 @@ const CandidatePortal = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-1">
-              <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-                <p className="text-sm font-semibold text-[var(--text-headers)]">Feedback</p>
-                <h3 className="mt-2 text-xl font-bold text-[var(--text-headers)]">
-                  {candidate?.status === 'Failed' 
-                    ? `Unsuccessful at ${candidate?.stageName || 'this'} stage` 
-                    : candidate?.status === 'Hired' 
-                      ? 'Congratulations! You are Hired!' 
-                      : candidate?.hasSubmittedFeedback 
-                        ? 'Available' 
-                        : 'Pending'}
-                </h3>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                  {candidate?.status === 'Failed' 
-                    ? 'Unfortunately, we will not be moving forward with your application at this time.' 
-                    : candidate?.status === 'Hired'
-                      ? 'Welcome to the team! Our HR department will reach out with next steps.'
-                      : candidate?.feedback || 'No reviewer feedback has been published yet.'}
-                </p>
+              <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--text-headers)]">Latest Interviewer Feedback</p>
+                    <h3 className="mt-1 text-lg font-bold text-[var(--text-headers)]">
+                      {candidate?.status === 'Failed' 
+                        ? `Not moving forward` 
+                        : candidate?.status === 'Hired' 
+                          ? 'Congratulations! You are Hired!' 
+                          : candidate?.hasSubmittedFeedback 
+                            ? 'Feedback Published' 
+                            : 'Pending Review'}
+                    </h3>
+                  </div>
+                  {candidate?.score > 0 && (
+                    <div className="text-right">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Score</p>
+                      <p className="text-3xl font-black text-indigo-600">{candidate.score}<span className="text-base font-semibold text-slate-400">/10</span></p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-5 rounded-xl border border-[var(--border-color)] bg-white p-4 text-sm text-[var(--text-muted)] shadow-sm dark:bg-slate-800">
+                  {candidate?.status === 'Failed' && !candidate?.feedback && (
+                    <p>Unfortunately, we will not be moving forward with your application at this time.</p>
+                  )}
+                  {candidate?.status === 'Hired' && !candidate?.feedback && (
+                    <p>Welcome to the team! Our HR department will reach out with next steps.</p>
+                  )}
+                  {candidate?.feedback ? (
+                    <div>
+                      <p className="italic text-[var(--text-headers)]">"{candidate.feedback}"</p>
+                    </div>
+                  ) : (
+                    (!candidate?.status || candidate.status === 'Applied' || candidate.status === 'Pending') && (
+                      <p>No reviewer feedback has been published for your current stage yet. Check back soon!</p>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <aside className="space-y-6">
-
-
           <div className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Privacy</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Transparency</p>
             <div className="mt-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 text-sm text-[var(--text-muted)]">
-              Sensitive internal feedback, salary conversations, and interviewer scoring remain hidden from your candidate view.
+              Your performance score and interviewer feedback for your active stage are shared here for full transparency. Internal salary conversations remain private.
             </div>
           </div>
         </aside>
