@@ -43,11 +43,11 @@ import {
 const EMPTY_STAGE = { name: '', interviewerId: '' };
 
 const tabs = [
-  { key: 'jobs', label: 'Create jobs', icon: BriefcaseBusiness },
-  { key: 'stages', label: 'Create stages', icon: Layers },
+  { key: 'jobs', label: 'Jobs', icon: BriefcaseBusiness },
+  { key: 'stages', label: 'Job stages', icon: Layers },
   { key: 'assignments', label: 'Assign interviewers', icon: Users },
-  { key: 'candidates', label: 'Create candidate', icon: UserPlus },
-  { key: 'directory', label: 'Directory', icon: List },
+  { key: 'candidates', label: 'Candidates', icon: UserPlus },
+  { key: 'directory', label: 'Candidates status', icon: List },
   { key: 'kanban', label: 'Kanban board', icon: Columns3 },
 ];
 
@@ -293,9 +293,25 @@ const HrPipelinePortal = () => {
       setViewingCandidate(null);
     } catch (advanceError) {
       console.error('Candidate advancement failed:', advanceError);
-      setError('Candidate movement could not be updated.');
+      setError('Candidate movement could not be updated: ' + advanceError.message);
     }
   };
+
+  const renderJobSelector = () => (
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/30 dark:bg-indigo-900/10">
+      <BriefcaseBusiness size={18} className="text-indigo-500" />
+      <span className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Selected Job Role:</span>
+      <select
+        value={selectedJobId}
+        onChange={(e) => setSelectedJobId(e.target.value)}
+        className="ml-auto min-w-[200px] flex-1 rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-indigo-800 dark:bg-slate-800 dark:text-indigo-100 dark:focus:ring-indigo-900 md:ml-2 md:flex-none"
+      >
+        {data.jobs.map((job) => (
+          <option key={job.id} value={job.id}>{job.title}</option>
+        ))}
+      </select>
+    </div>
+  );
 
   const handleFailCandidate = async (candidateId) => {
     if (!selectedJob) return;
@@ -372,69 +388,66 @@ const HrPipelinePortal = () => {
               );
             })}
           </nav>
-
-          {/* Divider */}
-          <div className="hr-sidebar-divider" />
-
-          {/* Job list */}
-          <div className="hr-sidebar-jobs">
-            <div className="hr-sidebar-jobs-title">
-              <span>{data.jobs.length} open roles</span>
-            </div>
-            {data.jobs.map((job) => (
-              <button
-                key={job.id}
-                onClick={() => setSelectedJobId(job.id)}
-                className={`hr-job-item ${selectedJob?.id === job.id ? 'hr-job-item-active' : ''}`}
-              >
-                <div>
-                  <div className="job-title">{job.title}</div>
-                  <div className="job-count">{job.candidates?.length || 0} candidates</div>
-                </div>
-                <BriefcaseBusiness size={14} className="nav-chevron" style={{ opacity: 0.4 }} />
-              </button>
-            ))}
-          </div>
         </aside>
 
         {/* ─── Main content ─── */}
         <main className="space-y-6">
-          {/* ───── Create Jobs Tab ───── */}
+          {/* ───── Jobs Tab ───── */}
           {activeTab === 'jobs' && (
-            <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Jobs</p>
-                  <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Create new role</h2>
+            <div className="space-y-6">
+              <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Jobs</p>
+                    <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Create new role</h2>
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <input value={newJob.title} onChange={(e) => setNewJob((prev) => ({ ...prev, title: e.target.value }))} placeholder="Role title" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                <input value={newJob.location} onChange={(e) => setNewJob((prev) => ({ ...prev, location: e.target.value }))} placeholder="Location" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                <input value={newJob.type} onChange={(e) => setNewJob((prev) => ({ ...prev, type: e.target.value }))} placeholder="Job type" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                <input value={newJob.company} onChange={(e) => setNewJob((prev) => ({ ...prev, company: e.target.value }))} placeholder="Company" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-              </div>
-
-              <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5">
-                <Plus size={16} /> Add job
-              </button>
-
-              {selectedJob && (
-                <div className="mt-8 border-t border-[var(--border-color)] pt-6">
-                  <h3 className="mb-2 text-lg font-bold text-red-600 dark:text-red-500">Danger Zone</h3>
-                  <p className="mb-4 text-sm text-[var(--text-muted)]">Permanently delete the currently selected job: <strong>{selectedJob.title}</strong></p>
-                  <button onClick={() => handleDeleteJob(selectedJob.id)} className="inline-flex items-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-500/20 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40">
-                    <Trash2 size={16} /> Delete role "{selectedJob.title}"
-                  </button>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <input value={newJob.title} onChange={(e) => setNewJob((prev) => ({ ...prev, title: e.target.value }))} placeholder="Role title" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                  <input value={newJob.location} onChange={(e) => setNewJob((prev) => ({ ...prev, location: e.target.value }))} placeholder="Location" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                  <input value={newJob.type} onChange={(e) => setNewJob((prev) => ({ ...prev, type: e.target.value }))} placeholder="Job type" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                  <input value={newJob.company} onChange={(e) => setNewJob((prev) => ({ ...prev, company: e.target.value }))} placeholder="Company" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
                 </div>
-              )}
-            </section>
+
+                <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5">
+                  <Plus size={16} /> Add job
+                </button>
+              </section>
+
+              <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                <div className="mb-5">
+                  <h2 className="text-xl font-bold text-[var(--text-headers)]">All Roles</h2>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {data.jobs.map((job) => (
+                    <div key={job.id} className="flex flex-col justify-between rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 transition-shadow hover:shadow-md">
+                      <div>
+                        <h3 className="text-lg font-bold text-[var(--text-headers)]">{job.title}</h3>
+                        <p className="mt-1 text-sm text-[var(--text-muted)]">{job.location} • {job.type}</p>
+                        <p className="mt-3 inline-flex items-center rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-600">
+                          {job.candidates?.length || 0} candidates
+                        </p>
+                      </div>
+                      <button onClick={() => handleDeleteJob(job.id)} disabled={readOnly} className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${readOnly ? 'bg-slate-100 text-slate-400 dark:bg-slate-800' : 'bg-red-500/10 text-red-600 hover:bg-red-500/20'}`}>
+                        <Trash2 size={16} /> Delete Role
+                      </button>
+                    </div>
+                  ))}
+                  {data.jobs.length === 0 && (
+                    <div className="col-span-full rounded-2xl border border-dashed border-[var(--border-color)] py-10 text-center text-sm text-[var(--text-muted)]">
+                      No jobs created yet. Create one above.
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
           )}
 
           {/* ───── Create Stages Tab ───── */}
           {activeTab === 'stages' && (
             <section className="rounded-[28px] border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+              {renderJobSelector()}
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Stage builder</p>
@@ -515,6 +528,7 @@ const HrPipelinePortal = () => {
           {/* ───── Assign Interviewers Tab ───── */}
           {activeTab === 'assignments' && (
             <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+              {renderJobSelector()}
               <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Interviewer assignment</p>
                 <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Map interviewers to job stages</h2>
@@ -667,6 +681,7 @@ const HrPipelinePortal = () => {
           {/* ───── Kanban Board Tab ───── */}
           {activeTab === 'kanban' && (
             <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+              {renderJobSelector()}
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Kanban board</p>
