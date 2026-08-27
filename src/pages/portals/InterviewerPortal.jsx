@@ -34,13 +34,15 @@ const InterviewerPortal = () => {
     };
   }, []);
 
-  const loggedInEmail = currentUser?.email?.toLowerCase() || '';
-  const loggedInName = userName?.toLowerCase() || '';
+  const loggedInEmail = String(currentUser?.email || '').toLowerCase();
+  const loggedInName = String(userName || '').toLowerCase();
 
   const assignedInterviewer = interviewers.find((person) => {
     if (person.id === userProfileId) return true;
-    if (loggedInEmail && person.email?.toLowerCase() === loggedInEmail) return true;
-    if (loggedInName && person.name?.toLowerCase() === loggedInName) return true;
+    const pEmail = String(person.email || '').toLowerCase();
+    const pName = String(person.name || '').toLowerCase();
+    if (loggedInEmail && pEmail === loggedInEmail) return true;
+    if (loggedInName && pName === loggedInName) return true;
     return false;
   }) || interviewers[0] || { name: userName || 'Interviewer', id: userProfileId };
 

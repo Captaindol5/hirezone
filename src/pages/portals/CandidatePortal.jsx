@@ -27,9 +27,14 @@ const CandidatePortal = () => {
 
     const currentUserEmail = currentUser?.email?.toLowerCase() || '';
 
-    const found = jobs.flatMap((job) => job.candidates).find((person) => {
-      const isEmailMatch = Boolean(person.email && currentUserEmail && person.email.toLowerCase() === currentUserEmail);
-      const isNameMatch = Boolean(person.name && userName && person.name.toLowerCase() === userName.toLowerCase());
+    const found = jobs.flatMap((job) => job?.candidates || []).find((person) => {
+      if (!person) return false;
+      const personEmail = String(person.email || '').toLowerCase();
+      const personName = String(person.name || '').toLowerCase();
+      const userN = String(userName || '').toLowerCase();
+      
+      const isEmailMatch = Boolean(person.email && currentUserEmail && personEmail === currentUserEmail);
+      const isNameMatch = Boolean(person.name && userName && personName === userN);
       return person.id === userProfileId || isEmailMatch || isNameMatch;
     });
 
@@ -215,7 +220,7 @@ const CandidatePortal = () => {
                 </div>
               </div>
 
-              {candidate?.feedbackHistory && candidate.feedbackHistory.length > 0 && (
+              {Array.isArray(candidate?.feedbackHistory) && candidate.feedbackHistory.length > 0 && (
                 <div className="mt-2 space-y-4">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Previous Stages</h3>
                   {candidate.feedbackHistory.map((hist, idx) => (
