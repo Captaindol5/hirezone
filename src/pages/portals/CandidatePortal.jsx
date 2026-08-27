@@ -38,25 +38,58 @@ const CandidatePortal = () => {
 
     if (found) {
       const job = jobs.find((entry) => entry.candidates.some((item) => item.id === found.id));
-      return { ...found, jobTitle: job?.title || 'Current role', stageName: job?.stages.find((stage) => stage.id === found.stage)?.name || found.stage };
+      return { 
+        ...found, 
+        jobTitle: job?.title || 'Current role', 
+        stageName: job?.stages.find((stage) => stage.id === found.stage)?.name || found.stage,
+        jobStages: job?.stages || []
+      };
     }
 
     return null;
   }, [jobs, userName, userProfileId]);
 
-  const pipelineStages = candidate
-    ? [
-        { name: 'Applied', status: 'done' },
-        { name: candidate.stageName || 'Review', status: 'active' },
-        { name: 'Interview', status: 'upcoming' },
-        { name: 'Offer', status: 'upcoming' },
-      ]
-    : [
+  const pipelineStages = useMemo(() => {
+    if (!candidate || !candidate.jobStages) {
+      return [
         { name: 'Applied', status: 'done' },
         { name: 'Review', status: 'active' },
         { name: 'Interview', status: 'upcoming' },
         { name: 'Offer', status: 'upcoming' },
       ];
+    }
+
+    const stages = [{ name: 'Applied', status: 'done' }];
+    let isPastCurrent = false;
+
+    candidate.jobStages.forEach(stage => {
+      let status = 'upcoming';
+
+      if (candidate.status === 'Hired') {
+        status = 'done';
+      } else if (candidate.status === 'Failed') {
+        if (stage.id === candidate.stage) {
+          status = 'failed';
+          isPastCurrent = true;
+        } else if (isPastCurrent) {
+          status = 'upcoming'; // Just gray them out
+        } else {
+          status = 'done';
+        }
+      } else {
+        if (stage.id === candidate.stage) {
+          status = 'active';
+          isPastCurrent = true;
+        } else if (!isPastCurrent) {
+          status = 'done';
+        }
+      }
+
+      stages.push({ name: stage.name, status });
+    });
+
+    return stages;
+  }, [candidate]);
 
   if (isLoading) {
     return (
@@ -94,7 +127,9 @@ const CandidatePortal = () => {
                         ? 'border-emerald-500 bg-emerald-500 text-white'
                         : stage.status === 'active'
                           ? 'border-amber-500 bg-amber-500 text-white'
-                          : 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          : stage.status === 'failed'
+                            ? 'border-red-500 bg-red-500 text-white'
+                            : 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     }`}>
                       {stage.status === 'done' ? <CheckCircle2 size={18} /> : index + 1}
                     </div>
@@ -107,8 +142,22 @@ const CandidatePortal = () => {
             <div className="grid gap-4 md:grid-cols-1">
               <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
                 <p className="text-sm font-semibold text-[var(--text-headers)]">Feedback</p>
-                <h3 className="mt-2 text-xl font-bold text-[var(--text-headers)]">{candidate?.hasSubmittedFeedback ? 'Available' : 'Pending'}</h3>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{candidate?.feedback || 'No reviewer feedback has been published yet.'}</p>
+                <h3 className="mt-2 text-xl font-bold text-[var(--text-headers)]">
+                  {candidate?.status === 'Failed' 
+                    ? `Unsuccessful at ${candidate?.stageName || 'this'} stage` 
+                    : candidate?.status === 'Hired' 
+                      ? 'Congratulations! You are Hired!' 
+                      : candidate?.hasSubmittedFeedback 
+                        ? 'Available' 
+                        : 'Pending'}
+                </h3>
+                <p className="mt-2 text-sm text-[var(--text-muted)]">
+                  {candidate?.status === 'Failed' 
+                    ? 'Unfortunately, we will not be moving forward with your application at this time.' 
+                    : candidate?.status === 'Hired'
+                      ? 'Welcome to the team! Our HR department will reach out with next steps.'
+                      : candidate?.feedback || 'No reviewer feedback has been published yet.'}
+                </p>
               </div>
             </div>
           </div>

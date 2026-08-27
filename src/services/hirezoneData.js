@@ -50,7 +50,16 @@ export const fetchInterviewers = async () => {
 
   try {
     const snapshot = await getDocs(collection(db, 'interviewers'));
-    return snapshot.docs.map((docSnap) => normalizeInterviewer({ id: docSnap.id, ...docSnap.data() }));
+    const rawList = snapshot.docs.map((docSnap) => normalizeInterviewer({ id: docSnap.id, ...docSnap.data() }));
+    // Deduplicate by name (case-insensitive) to fix duplicates
+    const uniqueMap = new Map();
+    rawList.forEach((person) => {
+      const key = (person.name || '').toLowerCase().trim();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, person);
+      }
+    });
+    return Array.from(uniqueMap.values());
   } catch (error) {
     console.error('Unable to fetch interviewers:', error);
     throw error;
@@ -383,3 +392,42 @@ export const updateCandidateProfile = async (candidateId, payload) => {
   await updateDoc(candidateRef, payload);
 };
 
+export const failCandidate = async (jobId, candidateId) => {
+  const jobRef = doc(db, 'jobs', jobId);
+  const current = await getDoc(jobRef);
+  if (!current.exists()) throw new Error('Job not found.');
+
+  const updatedCandidates = (current.data().candidates || []).map((candidate) =>
+    candidate.id === candidateId
+      ? { ...candidate, status: 'Failed' }
+      : candidate
+  );
+
+  await updateDoc(jobRef, { candidates: updatedCandidates });
+
+  const candidateRef = doc(db, 'candidates', candidateId);
+  const candidateDoc = await getDoc(candidateRef);
+  if (candidateDoc.exists()) {
+    await updateDoc(candidateRef, { status: 'Failed' });
+  }
+};
+
+export const hireCandidate = async (jobId, candidateId) => {
+  const jobRef = doc(db, 'jobs', jobId);
+  const current = await getDoc(jobRef);
+  if (!current.exists()) throw new Error('Job not found.');
+
+  const updatedCandidates = (current.data().candidates || []).map((candidate) =>
+    candidate.id === candidateId
+      ? { ...candidate, status: 'Hired' }
+      : candidate
+  );
+
+  await updateDoc(jobRef, { candidates: updatedCandidates });
+
+  const candidateRef = doc(db, 'candidates', candidateId);
+  const candidateDoc = await getDoc(candidateRef);
+  if (candidateDoc.exists()) {
+    await updateDoc(candidateRef, { status: 'Hired' });
+  }
+};
