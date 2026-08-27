@@ -51,12 +51,7 @@ const CandidatePortal = () => {
 
   const pipelineStages = useMemo(() => {
     if (!candidate || !candidate.jobStages) {
-      return [
-        { name: 'Applied', status: 'done' },
-        { name: 'Review', status: 'active' },
-        { name: 'Interview', status: 'upcoming' },
-        { name: 'Offer', status: 'upcoming' },
-      ];
+      return [];
     }
 
     const stages = [{ name: 'Applied', status: 'done' }];
@@ -119,24 +114,61 @@ const CandidatePortal = () => {
                 <span className="text-xs text-[var(--text-muted)]">{candidate ? 'Live status' : 'Waiting for matching record'}</span>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-4">
-                {pipelineStages.map((stage, index) => (
-                  <div key={`${stage.name}-${index}`} className="relative flex flex-col items-center text-center">
-                    <div className={`mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                      stage.status === 'done'
-                        ? 'border-emerald-500 bg-emerald-500 text-white'
-                        : stage.status === 'active'
-                          ? 'border-amber-500 bg-amber-500 text-white'
-                          : stage.status === 'failed'
-                            ? 'border-red-500 bg-red-500 text-white'
-                            : 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                    }`}>
-                      {stage.status === 'done' ? <CheckCircle2 size={18} /> : index + 1}
-                    </div>
-                    <span className="text-xs font-medium text-[var(--text-headers)]">{stage.name}</span>
+              {pipelineStages.length > 0 ? (
+                <div className="relative mt-8 mb-4 px-4 md:px-8">
+                  <div className="relative flex items-center justify-between">
+                    {/* Background Track */}
+                    <div className="absolute left-0 top-5 h-1.5 w-full -translate-y-1/2 rounded-full bg-slate-200 dark:bg-slate-700/60" />
+                    
+                    {/* Progress Track */}
+                    <div 
+                      className={`absolute left-0 top-5 h-1.5 -translate-y-1/2 rounded-full transition-all duration-700 ${candidate?.status === 'Failed' ? 'bg-red-500' : 'bg-emerald-500'}`}
+                      style={{ 
+                        width: `${(pipelineStages.findIndex(s => s.status === 'active' || s.status === 'failed') !== -1 
+                          ? pipelineStages.findIndex(s => s.status === 'active' || s.status === 'failed') 
+                          : pipelineStages.length - 1) / (pipelineStages.length - 1 || 1) * 100}%` 
+                      }}
+                    />
+
+                    {/* Nodes */}
+                    {pipelineStages.map((stage, index) => {
+                      const isDone = stage.status === 'done';
+                      const isActive = stage.status === 'active';
+                      const isFailed = stage.status === 'failed';
+                      
+                      return (
+                        <div key={index} className="relative z-10 flex flex-col items-center">
+                          <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full border-[3px] bg-white transition-all duration-300 dark:bg-slate-900 ${
+                            isDone ? 'border-emerald-500 text-emerald-500 shadow-md shadow-emerald-500/20' :
+                            isActive ? 'border-amber-500 bg-amber-50 text-amber-600 shadow-md shadow-amber-500/20 dark:border-amber-500/80 dark:bg-amber-900/30 dark:text-amber-400' :
+                            isFailed ? 'border-red-500 bg-red-50 text-red-600 shadow-md shadow-red-500/20 dark:border-red-500/80 dark:bg-red-900/30 dark:text-red-400' :
+                            'border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500'
+                          }`}>
+                            {isDone ? <CheckCircle2 size={18} strokeWidth={3} /> : <span className="text-sm font-bold">{index + 1}</span>}
+                          </div>
+                          
+                          <div className="absolute top-14 left-1/2 w-24 -ml-12 text-center">
+                            <div className={`text-[10px] font-bold uppercase tracking-wider ${
+                              isDone ? 'text-emerald-600 dark:text-emerald-400' :
+                              isActive ? 'text-amber-600 dark:text-amber-400' :
+                              isFailed ? 'text-red-600 dark:text-red-400' :
+                              'text-slate-400 dark:text-slate-500'
+                            }`}>{stage.name}</div>
+                            <div className="mt-0.5 text-[9px] font-semibold text-slate-400 opacity-80">
+                              {isDone ? 'Completed' : isActive ? 'In Progress' : isFailed ? 'Failed' : 'Pending'}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                  <div className="h-16" /> {/* Spacer for absolute text */}
+                </div>
+              ) : (
+                <div className="py-10 text-center text-sm font-semibold text-[var(--text-muted)]">
+                  No active application pipeline found for your account.
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-1">
