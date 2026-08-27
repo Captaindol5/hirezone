@@ -37,6 +37,7 @@ import {
   failCandidate,
   hireCandidate,
   deleteJob,
+  advanceCandidateStage,
 } from '../../services/hirezoneData';
 
 const EMPTY_STAGE = { name: '', interviewerId: '' };
@@ -286,27 +287,7 @@ const HrPipelinePortal = () => {
     if (!stage) return;
 
     try {
-      const job = data.jobs.find((item) => item.id === selectedJob.id);
-      if (!job) return;
-
-      const currentCandidates = [...job.candidates];
-      const updatedCandidates = currentCandidates.map((candidate) =>
-        candidate.id === candidateId
-          ? {
-              ...candidate,
-              stage: stage.id,
-              stageLabel: stage.name,
-              status: candidate.hasSubmittedFeedback ? 'Ready' : 'Pending',
-            }
-          : candidate
-      );
-
-      const nextData = {
-        ...data,
-        jobs: data.jobs.map((item) => (item.id === selectedJob.id ? { ...item, candidates: updatedCandidates } : item)),
-      };
-
-      await syncData(nextData);
+      await advanceCandidateStage(selectedJob.id, candidateId, stage.id);
       const refreshedJobs = await fetchJobs();
       setData((prev) => ({ ...prev, jobs: refreshedJobs }));
       setViewingCandidate(null);
@@ -782,32 +763,39 @@ const HrPipelinePortal = () => {
               <button onClick={() => setViewingCandidate(null)} className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700">
                 Back
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleFailCandidate(viewingCandidate.id)}
-                  disabled={!viewingCandidate.hasSubmittedFeedback || readOnly}
-                  className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${viewingCandidate.hasSubmittedFeedback && !readOnly ? 'bg-red-500 hover:bg-red-600' : 'cursor-not-allowed bg-red-300 dark:bg-red-900/50 dark:text-red-300'}`}
-                >
-                  Fail
-                </button>
-                {viewingCandidateStageIndex === (selectedJob?.stages?.length || 1) - 1 ? (
+              {viewingCandidate.hasSubmittedFeedback ? (
+                <div className="flex gap-2">
                   <button
-                    onClick={() => handleHireCandidate(viewingCandidate.id)}
-                    disabled={!viewingCandidate.hasSubmittedFeedback || readOnly}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${viewingCandidate.hasSubmittedFeedback && !readOnly ? 'bg-emerald-500 hover:bg-emerald-600' : 'cursor-not-allowed bg-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300'}`}
+                    onClick={() => handleFailCandidate(viewingCandidate.id)}
+                    disabled={readOnly}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${!readOnly ? 'bg-red-500 hover:bg-red-600' : 'cursor-not-allowed bg-red-300 dark:bg-red-900/50 dark:text-red-300'}`}
                   >
-                    Hire
+                    Fail
                   </button>
-                ) : (
-                  <button
-                    onClick={() => advanceCandidate(viewingCandidate.id, viewingCandidateStageIndex)}
-                    disabled={!viewingCandidate.hasSubmittedFeedback || readOnly}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${viewingCandidate.hasSubmittedFeedback && !readOnly ? 'bg-orange-500 hover:bg-orange-600' : 'cursor-not-allowed bg-orange-300 dark:bg-orange-900/50 dark:text-orange-300'}`}
-                  >
-                    Advance
-                  </button>
-                )}
-              </div>
+                  {viewingCandidateStageIndex === (selectedJob?.stages?.length || 1) - 1 ? (
+                    <button
+                      onClick={() => handleHireCandidate(viewingCandidate.id)}
+                      disabled={readOnly}
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${!readOnly ? 'bg-emerald-500 hover:bg-emerald-600' : 'cursor-not-allowed bg-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300'}`}
+                    >
+                      Hire
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => advanceCandidate(viewingCandidate.id, viewingCandidateStageIndex)}
+                      disabled={readOnly}
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${!readOnly ? 'bg-orange-500 hover:bg-orange-600' : 'cursor-not-allowed bg-orange-300 dark:bg-orange-900/50 dark:text-orange-300'}`}
+                    >
+                      Advance
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-500">
+                  <Clock3 size={16} />
+                  Feedback and score are pending for this stage
+                </div>
+              )}
             </div>
           </div>
         </div>

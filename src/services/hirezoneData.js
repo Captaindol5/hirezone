@@ -382,7 +382,10 @@ export const advanceCandidateStage = async (jobId, candidateId, nextStageId) => 
           ...candidate,
           stage: nextStageId,
           stageLabel: stageInfo?.name || nextStageId,
-          status: 'In progress',
+          status: 'Pending',
+          hasSubmittedFeedback: false,
+          score: 0,
+          feedback: '',
         }
       : candidate
   );
@@ -392,7 +395,11 @@ export const advanceCandidateStage = async (jobId, candidateId, nextStageId) => 
   const candidateRef = doc(db, 'candidates', candidateId);
   const candidateDoc = await getDoc(candidateRef);
   if (candidateDoc.exists()) {
-    await updateDoc(candidateRef, { currentStage: nextStageId, status: 'In progress' });
+    await updateDoc(candidateRef, { 
+      currentStage: nextStageId, 
+      status: 'Pending',
+      hasSubmittedFeedback: false
+    });
   }
 };
 
