@@ -29,8 +29,8 @@ import {
   createJob,
   createStageForJob,
   deleteStageForJob,
-  fetchInterviewers,
-  fetchJobs,
+  subscribeToJobs,
+  subscribeToInterviewers,
   persistJobs,
   updateStageAssignment,
   updateStageForJob,
@@ -86,22 +86,22 @@ const HrPipelinePortal = () => {
       stageId: prev.stageId || jobs[0]?.stages?.[0]?.id || '',
     }));
   };
-
   useEffect(() => {
-    const bootstrap = async () => {
-      try {
-        setIsLoading(true);
-        await loadData();
-        setError('');
-      } catch (loadError) {
-        console.error('Failed to load hiring data:', loadError);
-        setError('Unable to load the hiring pipeline from Firestore. Check your Firebase setup and permissions.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
+    const unsubJobs = subscribeToJobs((latestJobs) => {
+      setData((prev) => ({ ...prev, jobs: latestJobs }));
+      setIsLoading(false);
+      setError('');
+    });
+    
+    const unsubInterviewers = subscribeToInterviewers((latestInterviewers) => {
+      setData((prev) => ({ ...prev, interviewers: latestInterviewers }));
+    });
 
-    bootstrap();
+    return () => {
+      unsubJobs();
+      unsubInterviewers();
+    };
   }, []);
 
   const selectedJob = useMemo(
@@ -137,10 +137,8 @@ const HrPipelinePortal = () => {
         company: newJob.company,
       });
 
-      const nextData = { ...data, jobs: [...data.jobs, created] };
       setSelectedJobId(created.id);
       setNewJob({ title: '', location: 'Remote', type: 'General', company: 'HireZone' });
-      setData(nextData);
       setError('');
     } catch (createError) {
       console.error('Job creation failed:', createError);
@@ -153,9 +151,9 @@ const HrPipelinePortal = () => {
     if (!window.confirm('Are you sure you want to delete this role? All associated stages and candidates will also be unlinked or lost.')) return;
     try {
       await deleteJob(jobId);
-      const refreshed = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshed }));
-      setSelectedJobId(refreshed[0]?.id || '');
+      if (selectedJob?.id === jobId) {
+        setSelectedJobId('');
+      }
       setError('');
     } catch (err) {
       console.error('Job deletion failed:', err);
@@ -171,8 +169,6 @@ const HrPipelinePortal = () => {
         name: newStage.name,
         interviewerId: newStage.interviewerId,
       });
-      const refreshed = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshed }));
       setNewStage(EMPTY_STAGE);
       setError('');
     } catch (createError) {
@@ -189,8 +185,6 @@ const HrPipelinePortal = () => {
         name: newStage.name,
         interviewerId: newStage.interviewerId,
       });
-      const refreshed = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshed }));
       setNewStage(EMPTY_STAGE);
       setEditingStageId(null);
       setError('');
@@ -205,8 +199,6 @@ const HrPipelinePortal = () => {
 
     try {
       await deleteStageForJob(selectedJob.id, stageId);
-      const refreshed = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshed }));
       if (editingStageId === stageId) {
         setEditingStageId(null);
         setNewStage(EMPTY_STAGE);
@@ -228,8 +220,6 @@ const HrPipelinePortal = () => {
 
     try {
       await updateStageAssignment(selectedJob.id, stageId, interviewerId);
-      const refreshed = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshed }));
       setError('');
     } catch (assignmentError) {
       console.error('Assignment update failed:', assignmentError);
@@ -288,8 +278,6 @@ const HrPipelinePortal = () => {
 
     try {
       await advanceCandidateStage(selectedJob.id, candidateId, stage.id);
-      const refreshedJobs = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshedJobs }));
       setViewingCandidate(null);
     } catch (advanceError) {
       console.error('Candidate advancement failed:', advanceError);
@@ -317,8 +305,6 @@ const HrPipelinePortal = () => {
     if (!selectedJob) return;
     try {
       await failCandidate(selectedJob.id, candidateId);
-      const refreshedJobs = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshedJobs }));
       setViewingCandidate(null);
     } catch (err) {
       console.error(err);
@@ -330,8 +316,6 @@ const HrPipelinePortal = () => {
     if (!selectedJob) return;
     try {
       await hireCandidate(selectedJob.id, candidateId);
-      const refreshedJobs = await fetchJobs();
-      setData((prev) => ({ ...prev, jobs: refreshedJobs }));
       setViewingCandidate(null);
     } catch (err) {
       console.error(err);

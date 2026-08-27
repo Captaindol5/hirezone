@@ -3,7 +3,7 @@ import { CheckCircle2, FileText, Landmark, Sparkles } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import LoadingState from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
-import { fetchJobs } from '../../services/hirezoneData';
+import { subscribeToJobs } from '../../services/hirezoneData';
 
 const CandidatePortal = () => {
   const { userName, userProfileId } = useAuth();
@@ -12,21 +12,14 @@ const CandidatePortal = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const bootstrap = async () => {
-      try {
-        setIsLoading(true);
-        const nextJobs = await fetchJobs();
-        setJobs(nextJobs);
-        setError('');
-      } catch (loadError) {
-        console.error('Failed to load candidate data:', loadError);
-        setError('The candidate dashboard could not load. Check Firebase Firestore and permissions.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
+    const unsubscribe = subscribeToJobs((latestJobs) => {
+      setJobs(latestJobs);
+      setIsLoading(false);
+      setError('');
+    });
 
-    bootstrap();
+    return () => unsubscribe();
   }, []);
 
   const candidate = useMemo(() => {

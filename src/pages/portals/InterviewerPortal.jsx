@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertCircle, ChevronRight, FileText, ShieldCheck } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import { useAuth } from '../../context/AuthContext';
-import { fetchInterviewers, fetchJobs, submitCandidateFeedback } from '../../services/hirezoneData';
+import { subscribeToInterviewers, subscribeToJobs, submitCandidateFeedback } from '../../services/hirezoneData';
 
 const InterviewerPortal = () => {
   const { userProfileId, currentUser, userName } = useAuth();
@@ -13,15 +13,25 @@ const InterviewerPortal = () => {
   const [feedback, setFeedback] = useState('');
   const [submittedCandidateIds, setSubmittedCandidateIds] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const bootstrap = async () => {
-      const nextJobs = await fetchJobs();
-      const nextInterviewers = await fetchInterviewers();
-      setJobs(nextJobs);
-      setInterviewers(nextInterviewers);
+    setIsLoading(true);
+    const unsubJobs = subscribeToJobs((latestJobs) => {
+      setJobs(latestJobs);
+      setIsLoading(false);
+      setError('');
+    });
+    
+    const unsubInterviewers = subscribeToInterviewers((latestInterviewers) => {
+      setInterviewers(latestInterviewers);
+    });
+
+    return () => {
+      unsubJobs();
+      unsubInterviewers();
     };
-    bootstrap();
   }, []);
 
   const loggedInEmail = currentUser?.email?.toLowerCase() || '';

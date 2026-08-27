@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Clock3, Users2 } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import LoadingState from '../../components/LoadingState';
-import { fetchJobs } from '../../services/hirezoneData';
+import { subscribeToJobs } from '../../services/hirezoneData';
 
 const ManagerAnalyticsPortal = () => {
   const [jobs, setJobs] = useState([]);
@@ -10,21 +10,14 @@ const ManagerAnalyticsPortal = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const bootstrap = async () => {
-      try {
-        setIsLoading(true);
-        const nextJobs = await fetchJobs();
-        setJobs(nextJobs);
-        setError('');
-      } catch (loadError) {
-        console.error('Failed to load analytics data:', loadError);
-        setError('The analytics dashboard could not load from Firestore. Check your database setup and permissions.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
+    const unsubscribe = subscribeToJobs((latestJobs) => {
+      setJobs(latestJobs);
+      setIsLoading(false);
+      setError('');
+    });
 
-    bootstrap();
+    return () => unsubscribe();
   }, []);
 
   const stageSummary = useMemo(

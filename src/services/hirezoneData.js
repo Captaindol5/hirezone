@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, getAuth, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const hasFirestore = () => Boolean(db);
@@ -43,6 +43,17 @@ export const fetchJobs = async () => {
   }
 };
 
+export const subscribeToJobs = (callback) => {
+  if (!hasFirestore()) return () => {};
+  const q = query(collection(db, 'jobs'));
+  return onSnapshot(q, (snapshot) => {
+    const jobs = snapshot.docs.map((docSnap) => normalizeJob({ id: docSnap.id, ...docSnap.data() }));
+    callback(jobs);
+  }, (error) => {
+    console.error('Error in subscribeToJobs:', error);
+  });
+};
+
 export const fetchInterviewers = async () => {
   if (!hasFirestore()) {
     throw new Error('Firestore is not available. Configure Firebase before using the hiring portal.');
@@ -73,6 +84,32 @@ export const fetchInterviewers = async () => {
     console.error('Unable to fetch interviewers:', error);
     throw error;
   }
+};
+
+export const subscribeToInterviewers = (callback) => {
+  if (!hasFirestore()) return () => {};
+  const q = query(collection(db, 'interviewers'));
+  return onSnapshot(q, (snapshot) => {
+    const rawList = snapshot.docs.map((docSnap) => normalizeInterviewer({ id: docSnap.id, ...docSnap.data() }));
+    const uniqueMap = new Map();
+    const duplicates = [];
+    rawList.forEach((person) => {
+      const key = (person.name || '').toLowerCase().trim();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, person);
+      } else {
+        duplicates.push(person.id);
+      }
+    });
+    
+    duplicates.forEach(dupId => {
+      deleteDoc(doc(db, 'interviewers', dupId)).catch(e => console.error('Failed to cleanup duplicate interviewer:', e));
+    });
+
+    callback(Array.from(uniqueMap.values()));
+  }, (error) => {
+    console.error('Error in subscribeToInterviewers:', error);
+  });
 };
 
 export const fetchCandidates = async () => {
