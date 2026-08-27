@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, FileText, Landmark, Sparkles } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import LoadingState from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
 import { subscribeToJobs } from '../../services/hirezoneData';
 
 const CandidatePortal = () => {
-  const { userName, userProfileId } = useAuth();
+  const { currentUser, userName, userProfileId } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const currentUserEmail = currentUser?.email?.toLowerCase() || '';
 
   useEffect(() => {
-    setIsLoading(true);
     const unsubscribe = subscribeToJobs((latestJobs) => {
       setJobs(latestJobs);
       setIsLoading(false);
@@ -24,8 +24,6 @@ const CandidatePortal = () => {
 
   const candidate = useMemo(() => {
     if (!jobs.length) return null;
-
-    const currentUserEmail = currentUser?.email?.toLowerCase() || '';
 
     const found = jobs.flatMap((job) => job?.candidates || []).find((person) => {
       if (!person) return false;
@@ -49,7 +47,7 @@ const CandidatePortal = () => {
     }
 
     return null;
-  }, [jobs, userName, userProfileId]);
+  }, [currentUserEmail, jobs, userName, userProfileId]);
 
   const pipelineStages = useMemo(() => {
     if (!candidate || !candidate.jobStages) {
@@ -107,7 +105,7 @@ const CandidatePortal = () => {
               <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">{candidate?.jobTitle || 'No active role found'}</h2>
               {candidate && (
                 <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                  Active Stage: <span className="font-bold text-indigo-600 dark:text-indigo-400">{candidate.stageLabel}</span>
+                  Active Stage: <span className="font-bold text-indigo-600 dark:text-indigo-400">{candidate.stageName}</span>
                 </p>
               )}
             </div>

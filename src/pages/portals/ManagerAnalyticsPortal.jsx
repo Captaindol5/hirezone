@@ -10,7 +10,6 @@ const ManagerAnalyticsPortal = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setIsLoading(true);
     const unsubscribe = subscribeToJobs((latestJobs) => {
       setJobs(latestJobs);
       setIsLoading(false);

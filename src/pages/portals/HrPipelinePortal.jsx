@@ -6,7 +6,6 @@ import {
   Clock3,
   Columns3,
   Layers,
-  Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
@@ -16,8 +15,6 @@ import {
   UserRound,
   Eye,
   List,
-  Contact,
-  XCircle,
   Users,
   X,
 } from 'lucide-react';
@@ -26,12 +23,12 @@ import LoadingState from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
 import {
   createCandidateProfile,
+  fetchJobs,
   createJob,
   createStageForJob,
   deleteStageForJob,
   subscribeToJobs,
   subscribeToInterviewers,
-  persistJobs,
   updateStageAssignment,
   updateStageForJob,
   failCandidate,
@@ -76,18 +73,7 @@ const HrPipelinePortal = () => {
   const [viewingCandidate, setViewingCandidate] = useState(null);
   const [viewingCandidateStageIndex, setViewingCandidateStageIndex] = useState(-1);
 
-  const loadData = async () => {
-    const [jobs, interviewers] = await Promise.all([fetchJobs(), fetchInterviewers()]);
-    setData({ jobs, interviewers });
-    setSelectedJobId((current) => current || jobs[0]?.id || '');
-    setCandidateForm((prev) => ({
-      ...prev,
-      jobId: prev.jobId || jobs[0]?.id || '',
-      stageId: prev.stageId || jobs[0]?.stages?.[0]?.id || '',
-    }));
-  };
   useEffect(() => {
-    setIsLoading(true);
     const unsubJobs = subscribeToJobs((latestJobs) => {
       setData((prev) => ({ ...prev, jobs: latestJobs }));
       setIsLoading(false);
@@ -115,16 +101,6 @@ const HrPipelinePortal = () => {
   );
 
   const candidateStageOptions = candidateJob?.stages || [];
-
-  const syncData = async (nextData) => {
-    setData(nextData);
-    try {
-      await persistJobs(nextData.jobs);
-    } catch (syncError) {
-      console.error('Pipeline sync failed:', syncError);
-      setError('Your changes were saved locally but could not be synced to Firestore.');
-    }
-  };
 
   const addJob = async () => {
     if (!newJob.title.trim()) return;
@@ -264,11 +240,6 @@ const HrPipelinePortal = () => {
       console.error('Candidate creation failed:', createError);
       setError(createError.message || 'Candidate could not be created.');
     }
-  };
-
-  const canAdvance = (candidate) => {
-    const currentIndex = selectedJob?.stages.findIndex((stage) => stage.id === candidate.stage) ?? -1;
-    return currentIndex >= 0 && currentIndex < (selectedJob?.stages.length ?? 1) - 1 && candidate.hasSubmittedFeedback;
   };
 
   const advanceCandidate = async (candidateId, stageIndex) => {

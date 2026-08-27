@@ -399,7 +399,7 @@ export const createCandidateProfile = async ({
     }
   } catch (error) {
     console.error('Failed to add candidate to job:', error);
-    throw new Error('Candidate created in Auth, but could not be added to the job board due to permission errors.');
+    throw new Error('Candidate created in Auth, but could not be added to the job board due to permission errors.', { cause: error });
   }
 
   return candidateData;

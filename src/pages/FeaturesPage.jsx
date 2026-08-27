@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BriefcaseBusiness, Building2, CheckCircle2, ShieldCheck, Sparkles, UserRound, Users, Zap } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 const userTypes = [
   {
@@ -42,8 +41,6 @@ const userTypes = [
 ];
 
 const FeaturesPage = () => {
-  const { darkMode } = useTheme();
-
   return (
     <div className="landing-shell min-h-screen relative overflow-hidden bg-brand-primary-bg">
       <header className="topbar relative z-10 max-w-6xl mx-auto">

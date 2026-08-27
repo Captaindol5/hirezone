@@ -13,15 +13,10 @@ const InterviewerPortal = () => {
   const [feedback, setFeedback] = useState('');
   const [submittedCandidateIds, setSubmittedCandidateIds] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    setIsLoading(true);
     const unsubJobs = subscribeToJobs((latestJobs) => {
       setJobs(latestJobs);
-      setIsLoading(false);
-      setError('');
     });
     
     const unsubInterviewers = subscribeToInterviewers((latestInterviewers) => {

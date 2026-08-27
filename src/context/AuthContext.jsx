@@ -159,7 +159,7 @@ export const AuthProvider = ({ children }) => {
       if (!error.message || !error.message.includes('Portal role mismatch')) {
         const msg = `Unable to sign in. Reason: ${error.message}`;
         setAuthError(msg);
-        throw new Error(msg);
+        throw new Error(msg, { cause: error });
       }
       throw error;
     }
