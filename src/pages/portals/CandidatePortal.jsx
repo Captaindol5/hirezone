@@ -25,8 +25,12 @@ const CandidatePortal = () => {
   const candidate = useMemo(() => {
     if (!jobs.length) return null;
 
+    const currentUserEmail = currentUser?.email?.toLowerCase() || '';
+
     const found = jobs.flatMap((job) => job.candidates).find((person) => {
-      return person.id === userProfileId || person.name === userName;
+      const isEmailMatch = Boolean(person.email && currentUserEmail && person.email.toLowerCase() === currentUserEmail);
+      const isNameMatch = Boolean(person.name && userName && person.name.toLowerCase() === userName.toLowerCase());
+      return person.id === userProfileId || isEmailMatch || isNameMatch;
     });
 
     if (found) {
@@ -210,6 +214,31 @@ const CandidatePortal = () => {
                   )}
                 </div>
               </div>
+
+              {candidate?.feedbackHistory && candidate.feedbackHistory.length > 0 && (
+                <div className="mt-2 space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Previous Stages</h3>
+                  {candidate.feedbackHistory.map((hist, idx) => (
+                    <div key={idx} className="rounded-2xl border border-[var(--border-color)] bg-white/50 p-5 shadow-sm dark:bg-slate-900/40">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">Stage: {hist.stageName}</p>
+                          <h4 className="text-base font-bold text-[var(--text-headers)]">Completed</h4>
+                        </div>
+                        {hist.score > 0 && (
+                          <div className="text-right">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Score</p>
+                            <p className="text-xl font-black text-indigo-600">{hist.score}<span className="text-xs text-slate-400">/10</span></p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3 text-sm italic text-[var(--text-muted)]">
+                        "{hist.feedback}"
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>

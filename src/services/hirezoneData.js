@@ -413,19 +413,31 @@ export const advanceCandidateStage = async (jobId, candidateId, nextStageId) => 
   const nextStages = (current.data().stages || []).map((stage) => ({ ...stage }));
   const stageInfo = nextStages.find((stage) => stage.id === nextStageId);
 
-  const updatedCandidates = (current.data().candidates || []).map((candidate) =>
-    candidate.id === candidateId
-      ? {
-          ...candidate,
-          stage: nextStageId,
-          stageLabel: stageInfo?.name || nextStageId,
-          status: 'Pending',
-          hasSubmittedFeedback: false,
-          score: 0,
-          feedback: '',
-        }
-      : candidate
-  );
+  const updatedCandidates = (current.data().candidates || []).map((candidate) => {
+    if (candidate.id !== candidateId) return candidate;
+
+    const newHistory = [...(candidate.feedbackHistory || [])];
+    if (candidate.hasSubmittedFeedback) {
+      newHistory.push({
+        stageId: candidate.stage,
+        stageName: candidate.stageLabel || candidate.stage,
+        score: candidate.score || 0,
+        feedback: candidate.feedback || '',
+        date: Date.now()
+      });
+    }
+
+    return {
+      ...candidate,
+      stage: nextStageId,
+      stageLabel: stageInfo?.name || nextStageId,
+      status: 'Pending',
+      hasSubmittedFeedback: false,
+      score: 0,
+      feedback: '',
+      feedbackHistory: newHistory,
+    };
+  });
 
   await updateDoc(jobRef, { candidates: updatedCandidates });
 
