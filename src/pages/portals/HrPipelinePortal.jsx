@@ -38,7 +38,6 @@ import {
   hireCandidate,
   deleteJob,
   advanceCandidateStage,
-  createInterviewerProfile,
 } from '../../services/hirezoneData';
 
 const EMPTY_STAGE = { name: '', interviewerId: '' };
@@ -72,7 +71,6 @@ const HrPipelinePortal = () => {
     photoUrl: '',
     notes: '',
   });
-  const [newInterviewer, setNewInterviewer] = useState({ name: '', email: '', password: 'Welcome@123' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewingCandidate, setViewingCandidate] = useState(null);
@@ -275,27 +273,6 @@ const HrPipelinePortal = () => {
     } catch (createError) {
       console.error('Candidate creation failed:', createError);
       setError(createError.message || 'Candidate could not be created.');
-    }
-  };
-
-  const handleAddInterviewer = async () => {
-    if (!newInterviewer.name.trim() || !newInterviewer.email.trim()) {
-      setError('Interviewer name and email are required.');
-      return;
-    }
-    try {
-      await createInterviewerProfile({
-        name: newInterviewer.name,
-        email: newInterviewer.email,
-        password: newInterviewer.password,
-      });
-      const refreshed = await fetchInterviewers();
-      setData((prev) => ({ ...prev, interviewers: refreshed }));
-      setNewInterviewer({ name: '', email: '', password: 'Welcome@123' });
-      setError('');
-    } catch (err) {
-      console.error('Failed to create interviewer:', err);
-      setError(err.message || 'Interviewer could not be created.');
     }
   };
 
@@ -552,21 +529,6 @@ const HrPipelinePortal = () => {
           {activeTab === 'assignments' && (
             <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
               {renderJobSelector()}
-              
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Interviewer management</p>
-                  <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Create Interviewer</h2>
-                </div>
-              </div>
-              <div className="mb-8 grid gap-4 border-b border-[var(--border-color)] pb-8 md:grid-cols-3">
-                <input value={newInterviewer.name} onChange={(e) => setNewInterviewer(prev => ({...prev, name: e.target.value}))} placeholder="Interviewer Name" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                <input value={newInterviewer.email} onChange={(e) => setNewInterviewer(prev => ({...prev, email: e.target.value}))} placeholder="Email address" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                <button onClick={handleAddInterviewer} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5">
-                  <UserPlus size={16} /> Add interviewer
-                </button>
-              </div>
-
               <div className="mb-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Interviewer assignment</p>
                 <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Map interviewers to job stages</h2>

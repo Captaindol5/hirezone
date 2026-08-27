@@ -245,57 +245,6 @@ export const updateStageAssignment = async (jobId, stageId, interviewerId) => {
   return assignStageInterviewer(jobId, stageId, interviewerId);
 };
 
-export const createInterviewerProfile = async ({ name, email, password = 'Welcome@123' }) => {
-  if (!name || !email) throw new Error('Name and email are required to create an interviewer.');
-
-  const cleanEmail = String(email).trim();
-  const cleanName = String(name).trim();
-
-  // Initialize a secondary app to create the user so the current HR user is not logged out
-  const secondaryApp = initializeApp(auth.app.options, `SecondaryApp-${Date.now()}`);
-  const secondaryAuth = getAuth(secondaryApp);
-  await setPersistence(secondaryAuth, inMemoryPersistence);
-
-  let userCredential;
-  try {
-    userCredential = await createUserWithEmailAndPassword(secondaryAuth, cleanEmail, password);
-    await signOut(secondaryAuth);
-  } finally {
-    await deleteApp(secondaryApp);
-  }
-
-  const interviewerId = `interviewer-${Date.now()}`;
-  
-  const interviewerData = {
-    id: interviewerId,
-    name: cleanName,
-    email: cleanEmail,
-    role: 'interviewer',
-    stage: 'all',
-  };
-
-  try {
-    await setDoc(doc(db, 'interviewers', interviewerId), interviewerData);
-  } catch (error) {
-    console.warn('Could not write to interviewers collection.', error);
-  }
-
-  try {
-    await setDoc(doc(db, 'users', userCredential.user.uid), {
-      uid: userCredential.user.uid,
-      email: cleanEmail,
-      name: cleanName,
-      role: 'interviewer',
-      profileId: interviewerId,
-      createdAt: Date.now(),
-    });
-  } catch (error) {
-    console.warn('Could not write to users collection.', error);
-  }
-
-  return interviewerData;
-};
-
 export const submitCandidateFeedback = async (jobId, candidateId, payload) => {
   const jobRef = doc(db, 'jobs', jobId);
   const current = await getDoc(jobRef);
