@@ -32,11 +32,11 @@ import {
   fetchInterviewers,
   fetchJobs,
   persistJobs,
-  persistInterviewers,
   updateStageAssignment,
   updateStageForJob,
   failCandidate,
   hireCandidate,
+  deleteJob,
 } from '../../services/hirezoneData';
 
 const EMPTY_STAGE = { name: '', interviewerId: '' };
@@ -118,7 +118,7 @@ const HrPipelinePortal = () => {
   const syncData = async (nextData) => {
     setData(nextData);
     try {
-      await Promise.all([persistJobs(nextData.jobs), persistInterviewers(nextData.interviewers)]);
+      await persistJobs(nextData.jobs);
     } catch (syncError) {
       console.error('Pipeline sync failed:', syncError);
       setError('Your changes were saved locally but could not be synced to Firestore.');
@@ -144,6 +144,21 @@ const HrPipelinePortal = () => {
     } catch (createError) {
       console.error('Job creation failed:', createError);
       setError(createError.message || 'Job could not be created.');
+    }
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!jobId) return;
+    if (!window.confirm('Are you sure you want to delete this role? All associated stages and candidates will also be unlinked or lost.')) return;
+    try {
+      await deleteJob(jobId);
+      const refreshed = await fetchJobs();
+      setData((prev) => ({ ...prev, jobs: refreshed }));
+      setSelectedJobId(refreshed[0]?.id || '');
+      setError('');
+    } catch (err) {
+      console.error('Job deletion failed:', err);
+      setError('The job could not be deleted.');
     }
   };
 
@@ -420,9 +435,19 @@ const HrPipelinePortal = () => {
                 <input value={newJob.company} onChange={(e) => setNewJob((prev) => ({ ...prev, company: e.target.value }))} placeholder="Company" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
               </div>
 
-              <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white">
+              <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5">
                 <Plus size={16} /> Add job
               </button>
+
+              {selectedJob && (
+                <div className="mt-8 border-t border-[var(--border-color)] pt-6">
+                  <h3 className="mb-2 text-lg font-bold text-red-600 dark:text-red-500">Danger Zone</h3>
+                  <p className="mb-4 text-sm text-[var(--text-muted)]">Permanently delete the currently selected job: <strong>{selectedJob.title}</strong></p>
+                  <button onClick={() => handleDeleteJob(selectedJob.id)} className="inline-flex items-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-500/20 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40">
+                    <Trash2 size={16} /> Delete role "{selectedJob.title}"
+                  </button>
+                </div>
+              )}
             </section>
           )}
 

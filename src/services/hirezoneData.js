@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, getAuth, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 const hasFirestore = () => Boolean(db);
@@ -53,12 +53,21 @@ export const fetchInterviewers = async () => {
     const rawList = snapshot.docs.map((docSnap) => normalizeInterviewer({ id: docSnap.id, ...docSnap.data() }));
     // Deduplicate by name (case-insensitive) to fix duplicates
     const uniqueMap = new Map();
+    const duplicates = [];
     rawList.forEach((person) => {
       const key = (person.name || '').toLowerCase().trim();
       if (!uniqueMap.has(key)) {
         uniqueMap.set(key, person);
+      } else {
+        duplicates.push(person.id);
       }
     });
+    
+    // Auto-cleanup duplicates from Firestore
+    duplicates.forEach(dupId => {
+      deleteDoc(doc(db, 'interviewers', dupId)).catch(e => console.error('Failed to cleanup duplicate interviewer:', e));
+    });
+
     return Array.from(uniqueMap.values());
   } catch (error) {
     console.error('Unable to fetch interviewers:', error);
@@ -117,6 +126,11 @@ export const createJob = async ({ title, location, type, company = 'HireZone' })
   });
 
   return { id: docRef.id, title: cleanTitle, location: location || 'Remote', type: type || 'General', company, status: 'Open', stages: [], candidates: [] };
+};
+
+export const deleteJob = async (jobId) => {
+  if (!jobId) throw new Error('Job ID is required.');
+  await deleteDoc(doc(db, 'jobs', jobId));
 };
 
 export const createStageForJob = async (jobId, { name, interviewerId }) => {
@@ -200,14 +214,20 @@ export const deleteStageForJob = async (jobId, stageId) => {
 };
 
 export const assignStageInterviewer = async (jobId, stageId, interviewerId) => {
-  if (!jobId || !stageId) throw new Error('Job and stage are required.');
+  if (!jobId) throw new Error('Job is required.');
   const jobRef = doc(db, 'jobs', jobId);
   const current = await getDoc(jobRef);
   if (!current.exists()) throw new Error('Job not found.');
 
-  const stages = (current.data().stages || []).map((stage) =>
-    stage.id === stageId ? { ...stage, interviewer: interviewerId || '' } : stage
-  );
+  const stages = (current.data().stages || []).map((stage) => {
+    if (stageId && stage.id === stageId) {
+      return { ...stage, interviewer: interviewerId || '' };
+    }
+    if (stage.interviewer === interviewerId) {
+      return { ...stage, interviewer: '' }; // Remove interviewer from other stages
+    }
+    return stage;
+  });
 
   await updateDoc(jobRef, { stages });
   return { ...current.data(), stages };
@@ -218,14 +238,6 @@ export const persistJobs = async (jobs) => {
 
   for (const job of jobs) {
     await setDoc(doc(db, 'jobs', job.id), normalizeJob(job));
-  }
-};
-
-export const persistInterviewers = async (interviewers) => {
-  if (!hasFirestore()) return;
-
-  for (const person of interviewers) {
-    await setDoc(doc(db, 'interviewers', person.id), normalizeInterviewer(person));
   }
 };
 
