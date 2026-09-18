@@ -2,6 +2,7 @@ import { LogOut, MoonStar, SunMedium, UserCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import NotificationBell from './NotificationBell';
 
 const PortalLayout = ({ title, subtitle, profileName, children }) => {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const PortalLayout = ({ title, subtitle, profileName, children }) => {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-body)] transition-colors">
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 rounded-3xl border border-[var(--border-color)] bg-white/70 p-4 shadow-[var(--shadow-soft)] backdrop-blur dark:bg-slate-900/80 sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-8 flex flex-col gap-4 rounded-[2rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl dark:bg-black/40 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <img src="/logo.png" alt="HireZone Logo" className="h-14 md:h-16 object-contain mb-2 dark:hidden" />
             <img src="/logo-dark.png" alt="HireZone Logo" className="h-14 md:h-16 object-contain mb-2 hidden dark:block" />
@@ -32,6 +33,7 @@ const PortalLayout = ({ title, subtitle, profileName, children }) => {
             <button onClick={toggleTheme} className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-body)]" aria-label="Toggle theme">
               {darkMode ? <SunMedium size={18} /> : <MoonStar size={18} />}
             </button>
+            <NotificationBell />
             <button onClick={handleLogout} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:translate-y-[-1px]">
               <LogOut size={16} />
               Logout

@@ -1,9 +1,16 @@
-import { createUserWithEmailAndPassword, getAuth, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
-import { initializeApp, deleteApp } from 'firebase/app';
-import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import {
+  sendStageAdvancedEmail,
+  sendFeedbackPublishedEmail,
+  sendHiredEmail,
+  sendRejectedEmail,
+} from './emailService';
 
 const hasFirestore = () => Boolean(db);
+
+// Minimum AI score (out of 100) for a self-apply candidate to appear in the HR pipeline
+const AI_SCORE_THRESHOLD = 70;
 
 const normalizeJob = (job) => ({
   id: job.id,
@@ -14,6 +21,10 @@ const normalizeJob = (job) => ({
   company: job.company || 'HireZone',
   stages: Array.isArray(job.stages) ? job.stages : [],
   candidates: Array.isArray(job.candidates) ? job.candidates : [],
+  expiresAt: job.expiresAt || null,
+  department: job.department || job.type || 'General',
+  questions: Array.isArray(job.questions) ? job.questions : [],
+  passingThreshold: typeof job.passingThreshold === 'number' ? job.passingThreshold : 70,
 });
 
 const normalizeInterviewer = (person) => ({
@@ -36,7 +47,22 @@ export const fetchJobs = async () => {
 
   try {
     const snapshot = await getDocs(collection(db, 'jobs'));
-    return snapshot.docs.map((docSnap) => normalizeJob({ id: docSnap.id, ...docSnap.data() }));
+    const validJobs = [];
+    for (const docSnap of snapshot.docs) {
+      const data = docSnap.data();
+      if (data.expiresAt) {
+        const expDate = new Date(data.expiresAt);
+        expDate.setUTCHours(23, 59, 59, 999);
+        if (expDate.getTime() < Date.now()) {
+          await deleteDoc(doc(db, 'jobs', docSnap.id)).catch(console.error);
+        } else {
+          validJobs.push(normalizeJob({ id: docSnap.id, ...data }));
+        }
+      } else {
+        validJobs.push(normalizeJob({ id: docSnap.id, ...data }));
+      }
+    }
+    return validJobs;
   } catch (error) {
     console.error('Unable to fetch jobs:', error);
     throw error;
@@ -47,10 +73,62 @@ export const subscribeToJobs = (callback) => {
   if (!hasFirestore()) return () => {};
   const q = query(collection(db, 'jobs'));
   return onSnapshot(q, (snapshot) => {
-    const jobs = snapshot.docs.map((docSnap) => normalizeJob({ id: docSnap.id, ...docSnap.data() }));
-    callback(jobs);
+    const validJobs = [];
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.expiresAt) {
+        const expDate = new Date(data.expiresAt);
+        expDate.setUTCHours(23, 59, 59, 999);
+        if (expDate.getTime() < Date.now()) {
+          deleteDoc(doc(db, 'jobs', docSnap.id)).catch(console.error);
+        } else {
+          validJobs.push(normalizeJob({ id: docSnap.id, ...data }));
+        }
+      } else {
+        validJobs.push(normalizeJob({ id: docSnap.id, ...data }));
+      }
+    });
+    callback(validJobs);
   }, (error) => {
     console.error('Error in subscribeToJobs:', error);
+  });
+};
+
+/**
+ * Public-safe version for the Careers page.
+ * Strips candidate data so private info is never sent to unauthenticated users.
+ */
+export const subscribeToPublicJobs = (callback) => {
+  if (!hasFirestore()) return () => {};
+  const q = query(collection(db, 'jobs'));
+  return onSnapshot(q, (snapshot) => {
+    const publicJobs = [];
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data();
+      // Skip closed or expired jobs
+      if (data.status === 'Closed') return;
+      if (data.expiresAt) {
+        const expDate = new Date(data.expiresAt);
+        expDate.setUTCHours(23, 59, 59, 999);
+        if (expDate.getTime() < Date.now()) return;
+      }
+      // Strip candidates array — public users must not see applicant data
+      publicJobs.push({
+        id: docSnap.id,
+        title: data.title || 'Untitled role',
+        location: data.location || 'Remote',
+        department: data.department || data.type || 'General',
+        type: data.type || 'General',
+        status: data.status || 'Open',
+        stages: (data.stages || []).map(s => ({ id: s.id, name: s.name })), // No interviewer ID
+        expiresAt: data.expiresAt || null,
+        questions: Array.isArray(data.questions) ? data.questions : [],
+      });
+    });
+    callback(publicJobs);
+  }, (error) => {
+    console.warn('[subscribeToPublicJobs] Snapshot error — check Firestore rules allow public read on jobs:', error.message);
+    callback([]);
   });
 };
 
@@ -141,7 +219,7 @@ export const fetchUserProfile = async (uid) => {
   }
 };
 
-export const createJob = async ({ title, location, type, company = 'HireZone' }) => {
+export const createJob = async ({ title, department, expiresAt, questions, passingThreshold }) => {
   if (!hasFirestore()) {
     throw new Error('Firestore is not available.');
   }
@@ -151,18 +229,33 @@ export const createJob = async ({ title, location, type, company = 'HireZone' })
   }
 
   const cleanTitle = title.trim();
-  const docRef = await addDoc(collection(db, 'jobs'), {
+  const newJobData = {
     title: cleanTitle,
-    location: location || 'Remote',
-    type: type || 'General',
-    company,
+    location: 'Remote',
+    type: department || 'General',
+    department: department || 'General',
+    company: 'HireZone',
     status: 'Open',
     stages: [],
     candidates: [],
+    questions: Array.isArray(questions) ? questions : [],
+    passingThreshold: typeof passingThreshold === 'number' ? passingThreshold : 70,
     createdAt: Date.now(),
-  });
+    expiresAt: expiresAt || null,
+  };
+  const docRef = await addDoc(collection(db, 'jobs'), newJobData);
 
-  return { id: docRef.id, title: cleanTitle, location: location || 'Remote', type: type || 'General', company, status: 'Open', stages: [], candidates: [] };
+  return { id: docRef.id, ...newJobData };
+};
+
+export const updateJob = async (jobId, payload) => {
+  if (!jobId) throw new Error('Job ID is required.');
+  const jobRef = doc(db, 'jobs', jobId);
+  
+  const current = await getDoc(jobRef);
+  if (!current.exists()) throw new Error('Job not found.');
+
+  await updateDoc(jobRef, payload);
 };
 
 export const deleteJob = async (jobId) => {
@@ -288,11 +381,30 @@ export const submitCandidateFeedback = async (jobId, candidateId, payload) => {
   if (!current.exists()) throw new Error('Job not found.');
 
   const currentData = current.data();
+  const targetCandidate = (currentData.candidates || []).find(c => c.id === candidateId);
   const updatedCandidates = (currentData.candidates || []).map((candidate) =>
     candidate.id === candidateId ? { ...candidate, ...payload, hasSubmittedFeedback: true } : candidate
   );
 
   await updateDoc(jobRef, { candidates: updatedCandidates });
+
+  // Send feedback-published email and in-app notification
+  if (targetCandidate?.email) {
+    const stageInfo = (currentData.stages || []).find(s => s.id === targetCandidate.stage);
+    sendFeedbackPublishedEmail({
+      candidateName: targetCandidate.name,
+      toEmail: targetCandidate.email,
+      jobTitle: currentData.title || 'your role',
+      stageName: stageInfo?.name || targetCandidate.stageLabel || 'Interview',
+    });
+    if (targetCandidate.userUid) {
+      createNotification(
+        targetCandidate.userUid,
+        'Your interviewer has submitted feedback. Log in to view your score.',
+        'feedback_ready'
+      );
+    }
+  }
 };
 
 export const createCandidateProfile = async ({
@@ -300,34 +412,21 @@ export const createCandidateProfile = async ({
   email,
   jobId,
   stageId,
+  cvText = '',
   cvUrl = '',
-  photoUrl = '',
   notes = '',
-  password = 'Welcome@123',
+  source = 'HR portal',
+  aiScore = null,
+  aiSummary = '',
 }) => {
   if (!name || !email || !jobId || !stageId) {
     throw new Error('Candidate name, email, job, and stage are required.');
   }
 
-  const cleanEmail = String(email).trim();
+  const cleanEmail = String(email).trim().toLowerCase();
   const cleanName = String(name).trim();
 
-  // Initialize a secondary app to create the user so the current HR user is not logged out
-  const secondaryApp = initializeApp(auth.app.options, `SecondaryApp-${Date.now()}`);
-  const secondaryAuth = getAuth(secondaryApp);
-  
-  // CRITICAL: Set persistence to in-memory so it doesn't share state with the main app
-  await setPersistence(secondaryAuth, inMemoryPersistence);
-
-  let userCredential;
-  try {
-    userCredential = await createUserWithEmailAndPassword(secondaryAuth, cleanEmail, password);
-    await signOut(secondaryAuth);
-  } finally {
-    await deleteApp(secondaryApp);
-  }
-
-  const candidateId = `candidate-${Date.now()}`;
+  const candidateId = `candidate-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const jobDoc = await getDoc(doc(db, 'jobs', jobId));
   const stageName = jobDoc.exists()
     ? (jobDoc.data().stages || []).find((stage) => stage.id === stageId)?.name || stageId
@@ -337,17 +436,18 @@ export const createCandidateProfile = async ({
     id: candidateId,
     name: cleanName,
     email: cleanEmail,
-    cvUrl,
-    photoUrl,
-    notes,
+    cvText: cvText || '',
+    cvUrl: cvUrl || '',
+    notes: notes || '',
     jobId,
     currentStage: stageId,
-    status: 'Applied',
-    source: 'HR portal',
-    userUid: userCredential.user.uid,
+    status: source === 'self-apply' ? 'Screening' : 'Applied',
+    source,
     createdAt: Date.now(),
     hasSubmittedFeedback: false,
     stageLabel: stageName,
+    aiScore: aiScore !== null && aiScore !== undefined && !isNaN(Number(aiScore)) ? Number(aiScore) : null,
+    aiSummary: aiSummary || '',
   };
 
   try {
@@ -357,49 +457,50 @@ export const createCandidateProfile = async ({
   }
 
   try {
-    await setDoc(doc(db, 'users', userCredential.user.uid), {
-      uid: userCredential.user.uid,
-      email: cleanEmail,
-      name: cleanName,
-      role: 'candidate',
-      profileId: candidateId,
-      createdAt: Date.now(),
-    });
-  } catch (error) {
-    console.warn('Could not write to users collection. Check Firestore rules.', error);
-    // Even if this fails, we continue so the candidate is added to the job board.
-  }
-
-  try {
     const jobRef = doc(db, 'jobs', jobId);
     const freshJobDoc = await getDoc(jobRef);
     if (freshJobDoc.exists()) {
-      const existingCandidates = Array.isArray(freshJobDoc.data().candidates) ? freshJobDoc.data().candidates : [];
-      await updateDoc(jobRef, {
-        candidates: [
-          ...existingCandidates,
-          {
-            id: candidateId,
-            name: cleanName,
-            email: cleanEmail,
-            stage: stageId,
-            status: 'Applied',
-            hasSubmittedFeedback: false,
-            score: 0,
-            feedback: '',
-            stageLabel: stageName,
-            cvUrl: cvUrl || '',
-            photoUrl: photoUrl || '',
-            notes: notes || '',
-            userUid: userCredential.user.uid,
-            createdAt: Date.now(),
-          },
-        ],
-      });
+      // For self-apply: only add to HR pipeline if AI score meets the threshold
+      const selfApply = source === 'self-apply';
+      const jobData = freshJobDoc.data();
+      const passingThreshold = typeof jobData.passingThreshold === 'number' ? jobData.passingThreshold : AI_SCORE_THRESHOLD;
+      const passedScreening = !selfApply || aiScore === null || Number(aiScore) >= passingThreshold;
+
+      if (passedScreening) {
+        const existingCandidates = Array.isArray(freshJobDoc.data().candidates) ? freshJobDoc.data().candidates : [];
+        await updateDoc(jobRef, {
+          candidates: [
+            ...existingCandidates,
+            {
+              id: candidateId,
+              name: cleanName,
+              email: cleanEmail,
+              stage: stageId,
+              status: passedScreening && selfApply ? 'Applied' : candidateData.status,
+              hasSubmittedFeedback: false,
+              score: 0,
+              feedback: '',
+              stageLabel: stageName,
+              cvText: cvText || '',
+              cvUrl: cvUrl || '',
+              notes: notes || '',
+              source,
+              aiScore: candidateData.aiScore,
+              aiSummary: candidateData.aiSummary,
+              createdAt: Date.now(),
+            },
+          ],
+        });
+      } else {
+        // Below threshold — save to candidates collection but don't add to HR board
+        console.log(`[Screening] Candidate ${cleanName} scored ${aiScore}/100 — below threshold (${AI_SCORE_THRESHOLD}). Not added to HR pipeline.`);
+        // Update their status in the candidates doc to reflect this
+        await setDoc(doc(db, 'candidates', candidateId), { ...candidateData, status: 'Screened Out' }, { merge: true });
+      }
     }
   } catch (error) {
     console.error('Failed to add candidate to job:', error);
-    throw new Error('Candidate created in Auth, but could not be added to the job board due to permission errors.', { cause: error });
+    throw new Error('Could not add candidate to the job board.', { cause: error });
   }
 
   return candidateData;
@@ -441,13 +542,31 @@ export const advanceCandidateStage = async (jobId, candidateId, nextStageId) => 
 
   await updateDoc(jobRef, { candidates: updatedCandidates });
 
+  // Send stage-advanced email + in-app notification
+  const movedCandidate = (current.data().candidates || []).find(c => c.id === candidateId);
+  if (movedCandidate?.email) {
+    sendStageAdvancedEmail({
+      candidateName: movedCandidate.name,
+      toEmail: movedCandidate.email,
+      jobTitle: current.data().title || 'your role',
+      stageName: stageInfo?.name || nextStageId,
+    });
+    if (movedCandidate.userUid) {
+      createNotification(
+        movedCandidate.userUid,
+        `Your application has moved to: ${stageInfo?.name || nextStageId}`,
+        'stage_advanced'
+      );
+    }
+  }
+
   const candidateRef = doc(db, 'candidates', candidateId);
   const candidateDoc = await getDoc(candidateRef);
   if (candidateDoc.exists()) {
-    await updateDoc(candidateRef, { 
-      currentStage: nextStageId, 
+    await updateDoc(candidateRef, {
+      currentStage: nextStageId,
       status: 'Pending',
-      hasSubmittedFeedback: false
+      hasSubmittedFeedback: false,
     });
   }
 };
@@ -465,7 +584,10 @@ export const failCandidate = async (jobId, candidateId) => {
   const current = await getDoc(jobRef);
   if (!current.exists()) throw new Error('Job not found.');
 
-  const updatedCandidates = (current.data().candidates || []).map((candidate) =>
+  const jobData = current.data();
+  const targetCandidate = (jobData.candidates || []).find(c => c.id === candidateId);
+
+  const updatedCandidates = (jobData.candidates || []).map((candidate) =>
     candidate.id === candidateId
       ? { ...candidate, status: 'Failed' }
       : candidate
@@ -478,16 +600,36 @@ export const failCandidate = async (jobId, candidateId) => {
   if (candidateDoc.exists()) {
     await updateDoc(candidateRef, { status: 'Failed' });
   }
+
+  // Send rejection email + in-app notification
+  if (targetCandidate?.email) {
+    sendRejectedEmail({
+      candidateName: targetCandidate.name,
+      toEmail: targetCandidate.email,
+      jobTitle: jobData.title || 'the role',
+    });
+    if (targetCandidate.userUid) {
+      createNotification(
+        targetCandidate.userUid,
+        'An update on your application is available. Please log in to view.',
+        'application_update'
+      );
+    }
+  }
 };
 
-export const hireCandidate = async (jobId, candidateId) => {
+export const hireCandidate = async (jobId, candidateId, offer = {}) => {
   const jobRef = doc(db, 'jobs', jobId);
   const current = await getDoc(jobRef);
   if (!current.exists()) throw new Error('Job not found.');
 
-  const updatedCandidates = (current.data().candidates || []).map((candidate) =>
+  const jobData = current.data();
+  const targetCandidate = (jobData.candidates || []).find(c => c.id === candidateId);
+  const now = Date.now();
+
+  const updatedCandidates = (jobData.candidates || []).map((candidate) =>
     candidate.id === candidateId
-      ? { ...candidate, status: 'Hired' }
+      ? { ...candidate, status: 'Hired', hiredAt: now, offer: { startDate: offer.startDate || '', offerNotes: offer.offerNotes || '' } }
       : candidate
   );
 
@@ -496,6 +638,109 @@ export const hireCandidate = async (jobId, candidateId) => {
   const candidateRef = doc(db, 'candidates', candidateId);
   const candidateDoc = await getDoc(candidateRef);
   if (candidateDoc.exists()) {
-    await updateDoc(candidateRef, { status: 'Hired' });
+    await updateDoc(candidateRef, { status: 'Hired', hiredAt: now, offer });
   }
+
+  // Send hired email + in-app notification
+  if (targetCandidate?.email) {
+    sendHiredEmail({
+      candidateName: targetCandidate.name,
+      toEmail: targetCandidate.email,
+      jobTitle: jobData.title || 'the role',
+      startDate: offer.startDate || '',
+      offerNotes: offer.offerNotes || '',
+    });
+    if (targetCandidate.userUid) {
+      createNotification(
+        targetCandidate.userUid,
+        `🎉 Congratulations! You have been hired for ${jobData.title || 'the role'}.`,
+        'hired'
+      );
+    }
+  }
+};
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export const createNotification = async (recipientUid, message, type = 'general') => {
+  if (!hasFirestore() || !recipientUid) return;
+  try {
+    await addDoc(collection(db, 'notifications'), {
+      recipientUid,
+      message,
+      type,
+      read: false,
+      createdAt: Date.now(),
+    });
+  } catch (err) {
+    // Never crash the app on notification failure
+    console.warn('[Notifications] Could not create notification:', err.message);
+  }
+};
+
+export const subscribeToNotifications = (uid, callback) => {
+  if (!hasFirestore() || !uid) return () => {};
+  const q = query(
+    collection(db, 'notifications'),
+    where('recipientUid', '==', uid),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    const notifs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(notifs);
+  }, (err) => {
+    // Silently fail if collection doesn't exist yet or rules deny access
+    console.warn('[Notifications] Snapshot error (collection may not exist yet):', err.message);
+    callback([]);
+  });
+};
+
+export const markNotificationRead = async (notifId) => {
+  if (!hasFirestore() || !notifId) return;
+  try {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+  } catch (err) {
+    console.warn('[Notifications] Could not mark notification as read:', err.message);
+  }
+};
+
+// ─── Candidate real-time listener ─────────────────────────────────────────────
+
+export const subscribeToCandidate = (candidateId, callback) => {
+  if (!hasFirestore() || !candidateId) return () => {};
+  return onSnapshot(doc(db, 'candidates', candidateId), (snap) => {
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() });
+    } else {
+      callback(null);
+    }
+  }, (err) => {
+    console.warn('[subscribeToCandidate] Error:', err.message);
+  });
+};
+
+// ─── AI Screening Report ──────────────────────────────────────────────────────
+
+export const saveAiReport = async (jobId, candidateId, report, userUid) => {
+  if (!hasFirestore()) return;
+
+  // Save to jobs/{jobId} candidates array
+  const jobRef = doc(db, 'jobs', jobId);
+  const current = await getDoc(jobRef);
+  if (current.exists()) {
+    const updated = (current.data().candidates || []).map(c =>
+      c.id === candidateId ? { ...c, aiReport: report } : c
+    );
+    await updateDoc(jobRef, { candidates: updated });
+  }
+
+  // Also save to candidates/{candidateId}
+  const candidateRef = doc(db, 'candidates', candidateId);
+  const candidateDoc = await getDoc(candidateRef);
+  if (candidateDoc.exists()) {
+    await updateDoc(candidateRef, { aiReport: report });
+  }
+
+  // Notify HR (we use a generic HR notification — future: target specific HR uid)
+  console.log('[AI Report] Saved for candidate:', candidateId, report);
 };

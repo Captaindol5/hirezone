@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Candidates collection
+    match /candidates/{candidateId} {
+      // Anyone can create a candidate profile (for self-application)
+      allow create: if true;
+      // Candidates can update their own profile, HR can do anything
+      allow read, update, delete: if true; // In production, secure this by checking userUid or roles
+    }
+    
+    // Jobs collection
+    match /jobs/{jobId} {
+      // Anyone can read jobs
+      allow read: if true;
+      // Anyone can update the job (to add themselves to candidates array)
+      allow update: if true; // In production, write a specific rule that only allows arrayUnion on candidates
+      
+      // HR can do everything
+      allow create, delete: if true;
+    }
+    
+    // Default fallback
+    match /{document=**} {
+      allow read, write: if true; // Open rules for development. In production, change to false.
+    }
+  }
+}

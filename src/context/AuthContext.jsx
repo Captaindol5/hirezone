@@ -96,10 +96,9 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const login = async (email, password, role) => {
+  const login = async (email, password) => {
     const cleanEmail = String(email || '').trim();
     const cleanPassword = String(password || '');
-    const selectedRole = normalizeRole(role || getStoredPortalRole() || 'candidate');
 
     if (!cleanEmail || !cleanPassword) {
       const error = new Error('Email and password are required.');
@@ -116,16 +115,7 @@ export const AuthProvider = ({ children }) => {
       const profile = userDoc.exists() ? userDoc.data() : null;
       
       const profileRole = profile ? normalizeRole(profile.role) : null;
-      const requestedRole = normalizeRole(role || selectedRole || 'candidate');
-
-      if (profileRole && profileRole !== requestedRole) {
-        const error = new Error(`Portal role mismatch. This account is registered as a ${profileRole} user. Use the correct portal login.`);
-        setAuthError(error.message);
-        await signOut(auth);
-        throw error;
-      }
-
-      const resolvedRole = profileRole || requestedRole;
+      const resolvedRole = profileRole || 'candidate';
       const resolvedProfileId = (profile && profile.profileId) || result.user.uid;
 
       if (!profile) {

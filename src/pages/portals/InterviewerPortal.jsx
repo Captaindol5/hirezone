@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, ChevronRight, FileText, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Bot, ChevronRight, FileText, ShieldCheck } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import { useAuth } from '../../context/AuthContext';
-import { subscribeToInterviewers, subscribeToJobs, submitCandidateFeedback } from '../../services/hirezoneData';
+import { subscribeToInterviewers, subscribeToJobs, submitCandidateFeedback, subscribeToCandidate } from '../../services/hirezoneData';
 
 const InterviewerPortal = () => {
   const { userProfileId, currentUser, userName } = useAuth();
@@ -13,6 +13,7 @@ const InterviewerPortal = () => {
   const [feedback, setFeedback] = useState('');
   const [submittedCandidateIds, setSubmittedCandidateIds] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
+  const [liveProfile, setLiveProfile] = useState(null);
 
   useEffect(() => {
     const unsubJobs = subscribeToJobs((latestJobs) => {
@@ -28,6 +29,14 @@ const InterviewerPortal = () => {
       unsubInterviewers();
     };
   }, []);
+
+  // Subscribe to real candidate profile when selection changes
+  useEffect(() => {
+    if (!selectedCandidate?.id) { setLiveProfile(null); return; }
+    const unsub = subscribeToCandidate(selectedCandidate.id, setLiveProfile);
+    return () => unsub();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCandidateId]);
 
   const loggedInEmail = String(currentUser?.email || '').toLowerCase();
   const loggedInName = String(userName || '').toLowerCase();
@@ -82,8 +91,8 @@ const InterviewerPortal = () => {
 
   return (
     <PortalLayout title="Interviewer Portal" subtitle={`Assigned stage: ${assignedInterviewer?.stage || 'Interview stage'}`} profileName={assignedInterviewer?.name || 'Interviewer'}>
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+      <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 backdrop-blur-2xl p-8 shadow-2xl shadow-black/5">
           <div className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Queue</p>
             <h2 className="mt-1 text-xl font-bold text-[var(--text-headers)]">Candidates for review</h2>
@@ -99,7 +108,7 @@ const InterviewerPortal = () => {
                 <button
                   key={candidate.id}
                   onClick={() => setSelectedCandidateId(candidate.id)}
-                  className={`w-full rounded-2xl border p-3 text-left transition ${selectedCandidate?.id === candidate.id ? 'border-emerald-400 bg-emerald-500/5' : 'border-[var(--border-color)] bg-[var(--bg-secondary)]'}`}
+                  className={`w-full rounded-[1.5rem] border p-4 text-left transition-all duration-300 ${selectedCandidate?.id === candidate.id ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/5' : 'border-[var(--border-color)] bg-[var(--bg-secondary)] hover:shadow-md hover:-translate-y-1'}`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-[var(--text-headers)]">{candidate.name}</span>
@@ -121,8 +130,8 @@ const InterviewerPortal = () => {
           )}
 
           {selectedCandidate ? (
-            <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 backdrop-blur-2xl p-8 shadow-2xl shadow-black/5 flex flex-col h-full">
+              <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Candidate profile</p>
                   <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">{selectedCandidate.name}</h2>
@@ -138,11 +147,57 @@ const InterviewerPortal = () => {
                   <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
                     <p className="text-sm font-semibold text-[var(--text-headers)]">Profile</p>
                     <ul className="mt-3 space-y-2 text-sm text-[var(--text-muted)]">
-                      <li><strong className="text-[var(--text-headers)]">Experience:</strong> 6 years</li>
-                      <li><strong className="text-[var(--text-headers)]">Role:</strong> Frontend Engineer</li>
-                      <li><strong className="text-[var(--text-headers)]">Location:</strong> Remote</li>
+                      <li><strong className="text-[var(--text-headers)]">Experience:</strong> {liveProfile?.experience || 'Not provided'}</li>
+                      <li><strong className="text-[var(--text-headers)]">Role:</strong> {liveProfile?.currentRole || 'Not provided'}</li>
+                      <li><strong className="text-[var(--text-headers)]">Location:</strong> {liveProfile?.location || 'Not provided'}</li>
+                      {liveProfile?.skills && (
+                        <li>
+                          <strong className="text-[var(--text-headers)]">Skills:</strong>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {liveProfile.skills.split(',').map(s => s.trim()).filter(Boolean).map((skill, i) => (
+                              <span key={i} className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">{skill}</span>
+                            ))}
+                          </div>
+                        </li>
+                      )}
+                      {liveProfile?.linkedinUrl && (
+                        <li><a href={liveProfile.linkedinUrl} target="_blank" rel="noreferrer" className="text-indigo-500 hover:underline">🔗 LinkedIn Profile</a></li>
+                      )}
+                      {liveProfile?.bio && (
+                        <li className="italic text-[11px] opacity-80">"{liveProfile.bio}"</li>
+                      )}
                     </ul>
                   </div>
+
+                  {/* AI Report card */}
+                  {selectedCandidate?.aiReport && (
+                    <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 dark:border-purple-800/40 dark:bg-purple-900/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Bot size={15} className="text-purple-600" />
+                        <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Screening Report</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Score</p>
+                          <p className="mt-0.5 text-lg font-black text-indigo-600">{selectedCandidate.aiReport.score}<span className="text-[10px] text-slate-400">/10</span></p>
+                        </div>
+                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Confidence</p>
+                          <p className="mt-0.5 text-xs font-bold text-[var(--text-headers)]">{selectedCandidate.aiReport.confidence}</p>
+                        </div>
+                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Flags</p>
+                          <p className={`mt-0.5 text-xs font-bold ${selectedCandidate.aiReport.flagged ? 'text-rose-600' : 'text-emerald-600'}`}>
+                            {selectedCandidate.aiReport.flagged ? '⚠️ Flagged' : '✓ Clean'}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-[11px] italic text-[var(--text-muted)] leading-relaxed">"{selectedCandidate.aiReport.summary}"</p>
+                      {selectedCandidate.aiReport.tabSwitchCount > 0 && (
+                        <p className="mt-2 text-[10px] text-amber-600 font-semibold">Tab switches during interview: {selectedCandidate.aiReport.tabSwitchCount}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
                     <p className="text-sm font-semibold text-[var(--text-headers)]">Bias guardrail</p>
@@ -161,11 +216,11 @@ const InterviewerPortal = () => {
 
                   <div className="grid gap-4">
                     <label className="grid gap-2">
-                      <span className="text-sm font-medium text-[var(--text-headers)]">Score out of 5</span>
+                      <span className="text-sm font-medium text-[var(--text-headers)]">Score out of 10</span>
                       <input
                         type="number"
                         min="1"
-                        max="5"
+                        max="10"
                         value={score}
                         onChange={(e) => setScore(e.target.value)}
                         className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 outline-none focus:border-emerald-400"

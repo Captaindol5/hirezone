@@ -6,12 +6,13 @@ import LoadingState from './components/LoadingState';
 
 import LandingPage from './pages/LandingPage';
 import FeaturesPage from './pages/FeaturesPage';
-import PortalSelectPage from './pages/PortalSelectPage';
 import LoginPage from './pages/LoginPage';
-import CandidatePortal from './pages/portals/CandidatePortal';
+import CareersPage from './pages/CareersPage';
+import JobApplicationPage from './pages/JobApplicationPage';
 import InterviewerPortal from './pages/portals/InterviewerPortal';
 import HrPipelinePortal from './pages/portals/HrPipelinePortal';
 import ManagerAnalyticsPortal from './pages/portals/ManagerAnalyticsPortal';
+import AiScreeningPortal from './pages/portals/AiScreeningPortal';
 
 const RoleBasedRedirect = () => {
   const { userRole, loading } = useAuth();
@@ -20,7 +21,6 @@ const RoleBasedRedirect = () => {
     return <LoadingState title="Checking access" message="Loading your workspace permissions..." />;
   }
 
-  if (userRole === 'candidate') return <Navigate to="/portal/candidate" replace />;
   if (userRole === 'interviewer') return <Navigate to="/portal/interviewer" replace />;
   if (userRole === 'hr' || userRole === 'hiring_manager') return <Navigate to="/portal/hr" replace />;
   if (userRole === 'manager') return <Navigate to="/portal/analytics" replace />;
@@ -38,17 +38,15 @@ const AppRoutes = () => {
   return (
     <Router>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/features" element={<FeaturesPage />} />
-        <Route path="/login" element={<PortalSelectPage />} />
-        <Route path="/login/:role" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/apply/:jobId" element={<JobApplicationPage />} />
         <Route path="/dashboard" element={<RoleBasedRedirect />} />
 
-        <Route path="/portal/candidate" element={
-          <ProtectedRoute allowedRoles={['candidate']}>
-            <CandidatePortal />
-          </ProtectedRoute>
-        } />
+        {/* Protected portals */}
         <Route path="/portal/interviewer" element={
           <ProtectedRoute allowedRoles={['interviewer']}>
             <InterviewerPortal />
@@ -62,6 +60,11 @@ const AppRoutes = () => {
         <Route path="/portal/analytics" element={
           <ProtectedRoute allowedRoles={['manager']}>
             <ManagerAnalyticsPortal />
+          </ProtectedRoute>
+        } />
+        <Route path="/portal/ai-screening" element={
+          <ProtectedRoute allowedRoles={['interviewer', 'hr', 'hiring_manager']}>
+            <AiScreeningPortal />
           </ProtectedRoute>
         } />
       </Routes>

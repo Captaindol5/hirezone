@@ -4,29 +4,32 @@
 
 @layer base {
   :root {
-    --bg-primary: #FBF9F6;
+    --bg-primary: #F9FAFB;
     --bg-secondary: #FFFFFF;
-    --bg-tertiary: #F3EEF0;
-    --text-headers: #1A1625;
-    --text-body: #1A1625;
-    --text-muted: #6E6A78;
-    --border-color: #EAE5F0;
+    --bg-tertiary: #F3F4F6;
+    --text-headers: #111827;
+    --text-body: #374151;
+    --text-muted: #6B7280;
+    --border-color: rgba(0, 0, 0, 0.06);
     --accent-1: #ea580c;
     --accent-2: #ea580c;
-    --shadow-soft: 0 18px 45px rgba(26, 22, 37, 0.08);
+    --shadow-soft: 0 24px 60px -12px rgba(0, 0, 0, 0.06);
+    --radius-lg: 32px;
+    --radius-md: 24px;
+    --radius-sm: 16px;
   }
 
   .dark {
-    --bg-primary: #0B0813;
-    --bg-secondary: #141026;
-    --bg-tertiary: #1D1836;
-    --text-headers: #F1EEF7;
-    --text-body: #F1EEF7;
-    --text-muted: #9892A6;
-    --border-color: #251E3B;
-    --accent-1: #f97316;
-    --accent-2: #f97316;
-    --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.45);
+    --bg-primary: #000000;
+    --bg-secondary: #1C1C1E;
+    --bg-tertiary: #2C2C2E;
+    --text-headers: #FFFFFF;
+    --text-body: #EBEBF5;
+    --text-muted: #EBEBF599;
+    --border-color: rgba(255, 255, 255, 0.15);
+    --accent-1: #FF9F0A;
+    --accent-2: #FF9F0A;
+    --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
   * {
@@ -42,7 +45,9 @@
     min-height: 100vh;
     background: var(--bg-primary);
     color: var(--text-body);
-    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
@@ -90,12 +95,13 @@
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 32px;
-  padding: 18px 22px;
+  padding: 16px 24px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(16px);
-  border-radius: 22px;
-  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.04);
 }
 
 .dark .topbar,
@@ -105,7 +111,7 @@
 .dark .job-card,
 .dark .dashboard-card,
 .dark .flow-item {
-  background: rgba(15, 27, 42, 0.82);
+  background: rgba(10, 10, 10, 0.65);
 }
 
 .brand-wrap {
@@ -151,16 +157,16 @@
 .primary-btn,
 .secondary-btn {
   border: none;
-  border-radius: 14px;
-  font-weight: 700;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   background: var(--bg-secondary);
   color: var(--text-body);
   border: 1px solid var(--border-color);
@@ -173,18 +179,18 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0.9rem 1.3rem;
+  padding: 0.85rem 1.4rem;
   cursor: pointer;
+  letter-spacing: -0.01em;
 }
 
 .primary-btn {
   background: var(--accent-1);
   color: #fff;
-  box-shadow: 0 12px 25px rgba(234, 88, 12, 0.25);
 }
 
 .secondary-btn {
-  background: var(--bg-secondary);
+  background: transparent;
   color: var(--text-headers);
   border: 1px solid var(--border-color);
 }
@@ -192,7 +198,7 @@
 .primary-btn:hover,
 .secondary-btn:hover,
 .icon-btn:hover {
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 
 .small-btn {
@@ -434,10 +440,12 @@
 .flow-panel,
 .portal-card,
 .auth-card {
-  padding: 28px 22px;
+  padding: 32px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(40px) saturate(2);
+  -webkit-backdrop-filter: blur(40px) saturate(2);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
 }
 

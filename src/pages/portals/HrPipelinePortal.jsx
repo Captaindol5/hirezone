@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  AlertCircle,
   BriefcaseBusiness,
   CheckCircle2,
   ChevronRight,
@@ -19,6 +20,8 @@ import {
   X,
 } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
+import ErrorModal from '../../components/ErrorModal';
+import SuccessModal from '../../components/SuccessModal';
 import LoadingState from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -35,15 +38,14 @@ import {
   hireCandidate,
   deleteJob,
   advanceCandidateStage,
+  updateJob,
 } from '../../services/hirezoneData';
 
 const EMPTY_STAGE = { name: '', interviewerId: '' };
 
 const tabs = [
   { key: 'jobs', label: 'Jobs', icon: BriefcaseBusiness },
-  { key: 'stages', label: 'Job stages', icon: Layers },
   { key: 'assignments', label: 'Assign interviewers', icon: Users },
-  { key: 'candidates', label: 'Candidates', icon: UserPlus },
   { key: 'directory', label: 'Candidates status', icon: List },
   { key: 'kanban', label: 'Kanban board', icon: Columns3 },
 ];
@@ -53,9 +55,11 @@ const HrPipelinePortal = () => {
   const readOnly = userRole === 'manager';
   const [data, setData] = useState({ jobs: [], interviewers: [] });
   const [selectedJobId, setSelectedJobId] = useState('');
-  const [activeTab, setActiveTab] = useState('stages');
+  const [activeTab, setActiveTab] = useState('jobs');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [newJob, setNewJob] = useState({ title: '', location: 'Remote', type: 'General', company: 'HireZone' });
+  const [newJob, setNewJob] = useState({ title: '', department: '', expiresAt: '', passingThreshold: 70, questions: [''] });
+  const [viewingJobDetails, setViewingJobDetails] = useState(null);
+  const [editingJobDetails, setEditingJobDetails] = useState({ title: '', department: '', expiresAt: '', passingThreshold: 70, questions: [] });
   const [newStage, setNewStage] = useState(EMPTY_STAGE);
   const [editingStageId, setEditingStageId] = useState(null);
   const [candidateForm, setCandidateForm] = useState({
@@ -70,8 +74,10 @@ const HrPipelinePortal = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [viewingCandidate, setViewingCandidate] = useState(null);
   const [viewingCandidateStageIndex, setViewingCandidateStageIndex] = useState(-1);
+  const [offerModal, setOfferModal] = useState({ open: false, candidateId: null, startDate: '', offerNotes: '' });
 
   useEffect(() => {
     const unsubJobs = subscribeToJobs((latestJobs) => {
@@ -103,22 +109,49 @@ const HrPipelinePortal = () => {
   const candidateStageOptions = candidateJob?.stages || [];
 
   const addJob = async () => {
-    if (!newJob.title.trim()) return;
+    if (!newJob.title.trim()) {
+      setError('Role title is required.');
+      return;
+    }
 
     try {
       const created = await createJob({
         title: newJob.title,
-        location: newJob.location,
-        type: newJob.type,
-        company: newJob.company,
+        department: newJob.department,
+        expiresAt: newJob.expiresAt,
+        questions: newJob.questions.filter(q => q.trim()),
+        passingThreshold: Number(newJob.passingThreshold) || 70,
       });
 
       setSelectedJobId(created.id);
-      setNewJob({ title: '', location: 'Remote', type: 'General', company: 'HireZone' });
+      setNewJob({ title: '', department: '', expiresAt: '', passingThreshold: 70, questions: [''] });
       setError('');
+      setSuccess('Job created successfully.');
     } catch (createError) {
       console.error('Job creation failed:', createError);
       setError(createError.message || 'Job could not be created.');
+    }
+  };
+
+  const updateJobDetails = async () => {
+    if (!viewingJobDetails) return;
+    if (!editingJobDetails.title.trim()) {
+      setError('Role title is required.');
+      return;
+    }
+    try {
+      await updateJob(viewingJobDetails.id, {
+        title: editingJobDetails.title.trim(),
+        department: editingJobDetails.department.trim() || 'General',
+        expiresAt: editingJobDetails.expiresAt || null,
+        type: editingJobDetails.department.trim() || 'General',
+        questions: editingJobDetails.questions.filter(q => q.trim()),
+        passingThreshold: Number(editingJobDetails.passingThreshold) || 70,
+      });
+      setError('');
+      setSuccess('Job details updated successfully.');
+    } catch (err) {
+      setError('Could not update job: ' + err.message);
     }
   };
 
@@ -130,7 +163,11 @@ const HrPipelinePortal = () => {
       if (selectedJob?.id === jobId) {
         setSelectedJobId('');
       }
+      if (viewingJobDetails?.id === jobId) {
+        setViewingJobDetails(null);
+      }
       setError('');
+      setSuccess('Role deleted successfully.');
     } catch (err) {
       console.error('Job deletion failed:', err);
       setError('The job could not be deleted.');
@@ -138,7 +175,11 @@ const HrPipelinePortal = () => {
   };
 
   const addStage = async () => {
-    if (!selectedJob || !newStage.name.trim()) return;
+    if (!selectedJob) return;
+    if (!newStage.name.trim()) {
+      setError('Stage name is required.');
+      return;
+    }
 
     try {
       await createStageForJob(selectedJob.id, {
@@ -147,6 +188,7 @@ const HrPipelinePortal = () => {
       });
       setNewStage(EMPTY_STAGE);
       setError('');
+      setSuccess('Stage created successfully.');
     } catch (createError) {
       console.error('Stage creation failed:', createError);
       setError(createError.message || 'Stage could not be created.');
@@ -154,7 +196,11 @@ const HrPipelinePortal = () => {
   };
 
   const updateStage = async () => {
-    if (!selectedJob || !editingStageId || !newStage.name.trim()) return;
+    if (!selectedJob || !editingStageId) return;
+    if (!newStage.name.trim()) {
+      setError('Stage name is required.');
+      return;
+    }
 
     try {
       await updateStageForJob(selectedJob.id, editingStageId, {
@@ -164,6 +210,7 @@ const HrPipelinePortal = () => {
       setNewStage(EMPTY_STAGE);
       setEditingStageId(null);
       setError('');
+      setSuccess('Stage updated successfully.');
     } catch (updateError) {
       console.error('Stage update failed:', updateError);
       setError(updateError.message || 'Stage could not be updated.');
@@ -180,6 +227,7 @@ const HrPipelinePortal = () => {
         setNewStage(EMPTY_STAGE);
       }
       setError('');
+      setSuccess('Stage deleted successfully.');
     } catch (deleteError) {
       console.error('Stage deletion failed:', deleteError);
       setError(deleteError.message || 'Stage could not be deleted.');
@@ -197,6 +245,7 @@ const HrPipelinePortal = () => {
     try {
       await updateStageAssignment(selectedJob.id, stageId, interviewerId);
       setError('');
+      setSuccess('Interviewer assigned successfully.');
     } catch (assignmentError) {
       console.error('Assignment update failed:', assignmentError);
       setError('The interviewer assignment could not be saved.');
@@ -235,6 +284,7 @@ const HrPipelinePortal = () => {
         notes: '',
       });
       setError('');
+      setSuccess('Candidate profile created successfully.');
       setActiveTab('kanban');
     } catch (createError) {
       console.error('Candidate creation failed:', createError);
@@ -250,6 +300,7 @@ const HrPipelinePortal = () => {
     try {
       await advanceCandidateStage(selectedJob.id, candidateId, stage.id);
       setViewingCandidate(null);
+      setSuccess('Candidate advanced successfully.');
     } catch (advanceError) {
       console.error('Candidate advancement failed:', advanceError);
       setError('Candidate movement could not be updated: ' + advanceError.message);
@@ -277,20 +328,31 @@ const HrPipelinePortal = () => {
     try {
       await failCandidate(selectedJob.id, candidateId);
       setViewingCandidate(null);
+      setSuccess('Candidate status updated to Failed.');
     } catch (err) {
       console.error(err);
       setError('Failed to update candidate status.');
     }
   };
 
-  const handleHireCandidate = async (candidateId) => {
-    if (!selectedJob) return;
+  const handleHireCandidate = (candidateId) => {
+    // Open offer modal instead of hiring immediately
+    setOfferModal({ open: true, candidateId, startDate: '', offerNotes: '' });
+  };
+
+  const handleConfirmHire = async () => {
+    if (!selectedJob || !offerModal.candidateId) return;
     try {
-      await hireCandidate(selectedJob.id, candidateId);
+      await hireCandidate(selectedJob.id, offerModal.candidateId, {
+        startDate: offerModal.startDate,
+        offerNotes: offerModal.offerNotes,
+      });
       setViewingCandidate(null);
+      setOfferModal({ open: false, candidateId: null, startDate: '', offerNotes: '' });
+      setSuccess('Candidate hired! Offer details saved and confirmation email sent.');
     } catch (err) {
       console.error(err);
-      setError('Failed to update candidate status.');
+      setError('Failed to hire candidate.');
     }
   };
 
@@ -304,7 +366,53 @@ const HrPipelinePortal = () => {
 
   return (
     <PortalLayout title={readOnly ? 'HR Dashboard (Read-only)' : 'HR / Hiring Manager'} subtitle={readOnly ? 'Manager view: review role setup and candidate movement without changing workflow state.' : 'Create jobs, stages, assignment rules, and candidate profiles in one place.'} profileName={readOnly ? 'Executive Review' : 'HR Team'}>
-      {error && <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-900/20 dark:text-red-200">{error}</div>}
+      {error && <ErrorModal error={error} onClose={() => setError('')} />}
+      {success && <SuccessModal message={success} onClose={() => setSuccess('')} />}
+
+      {/* ─── Offer Modal ─── */}
+      {offerModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border-color)] bg-white p-6 shadow-2xl dark:bg-slate-900">
+            <h2 className="text-xl font-bold text-[var(--text-headers)] mb-1">🎉 Confirm Hire</h2>
+            <p className="text-sm text-[var(--text-muted)] mb-5">Fill in the offer details. These will be visible to the candidate and sent via email.</p>
+            <div className="space-y-4">
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-[var(--text-headers)]">Start Date</span>
+                <input
+                  type="date"
+                  value={offerModal.startDate}
+                  onChange={e => setOfferModal(p => ({ ...p, startDate: e.target.value }))}
+                  className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 text-sm outline-none focus:border-emerald-400"
+                />
+              </label>
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-[var(--text-headers)]">Offer Notes / Welcome Message</span>
+                <textarea
+                  rows={3}
+                  value={offerModal.offerNotes}
+                  onChange={e => setOfferModal(p => ({ ...p, offerNotes: e.target.value }))}
+                  placeholder="e.g. Welcome to the team! Onboarding starts on your first day at 9am."
+                  className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 text-sm outline-none focus:border-emerald-400 resize-none"
+                />
+              </label>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setOfferModal({ open: false, candidateId: null, startDate: '', offerNotes: '' })}
+                className="flex-1 rounded-2xl border border-[var(--border-color)] py-2.5 text-sm font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmHire}
+                className="flex-1 rounded-2xl bg-emerald-500 py-2.5 text-sm font-bold text-white shadow transition hover:bg-emerald-600"
+              >
+                Confirm & Send Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)]">
         {/* ─── Premium Sidebar ─── */}
@@ -347,137 +455,244 @@ const HrPipelinePortal = () => {
 
         {/* ─── Main content ─── */}
         <main className="space-y-6">
-          {/* ───── Jobs Tab ───── */}
+          {/* ───── Jobs & Stages Tab ───── */}
           {activeTab === 'jobs' && (
             <div className="space-y-6">
-              <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Jobs</p>
-                    <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Create new role</h2>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <input value={newJob.title} onChange={(e) => setNewJob((prev) => ({ ...prev, title: e.target.value }))} placeholder="Role title" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                  <input value={newJob.location} onChange={(e) => setNewJob((prev) => ({ ...prev, location: e.target.value }))} placeholder="Location" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                  <input value={newJob.type} onChange={(e) => setNewJob((prev) => ({ ...prev, type: e.target.value }))} placeholder="Job type" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                  <input value={newJob.company} onChange={(e) => setNewJob((prev) => ({ ...prev, company: e.target.value }))} placeholder="Company" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
-                </div>
-
-                <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5">
-                  <Plus size={16} /> Add job
-                </button>
-              </section>
-
-              <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-                <div className="mb-5">
-                  <h2 className="text-xl font-bold text-[var(--text-headers)]">All Roles</h2>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {data.jobs.map((job) => (
-                    <div key={job.id} className="flex flex-col justify-between rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 transition-shadow hover:shadow-md">
+              {!viewingJobDetails ? (
+                <>
+                  <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                    <div className="mb-5 flex items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-bold text-[var(--text-headers)]">{job.title}</h3>
-                        <p className="mt-1 text-sm text-[var(--text-muted)]">{job.location} • {job.type}</p>
-                        <p className="mt-3 inline-flex items-center rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-600">
-                          {job.candidates?.length || 0} candidates
-                        </p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Jobs</p>
+                        <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Create new role</h2>
                       </div>
-                      <button onClick={() => handleDeleteJob(job.id)} disabled={readOnly} className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${readOnly ? 'bg-slate-100 text-slate-400 dark:bg-slate-800' : 'bg-red-500/10 text-red-600 hover:bg-red-500/20'}`}>
-                        <Trash2 size={16} /> Delete Role
-                      </button>
                     </div>
-                  ))}
-                  {data.jobs.length === 0 && (
-                    <div className="col-span-full rounded-2xl border border-dashed border-[var(--border-color)] py-10 text-center text-sm text-[var(--text-muted)]">
-                      No jobs created yet. Create one above.
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <input value={newJob.title} onChange={(e) => setNewJob((prev) => ({ ...prev, title: e.target.value }))} placeholder="Role title" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      <input value={newJob.department} onChange={(e) => setNewJob((prev) => ({ ...prev, department: e.target.value }))} placeholder="Department" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Expiration Date (Optional)</label>
+                        <input type="date" value={newJob.expiresAt || ''} onChange={(e) => setNewJob((prev) => ({ ...prev, expiresAt: e.target.value }))} className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">AI Passing Score Threshold (0-100)</label>
+                        <input type="number" min="0" max="100" value={newJob.passingThreshold} onChange={(e) => setNewJob((prev) => ({ ...prev, passingThreshold: e.target.value }))} placeholder="70" className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      </div>
+                      
+                      <div className="md:col-span-2 mt-2">
+                        <label className="block text-xs font-semibold text-slate-500 mb-2">Screening Questions (Candidates must answer these)</label>
+                        <div className="space-y-3">
+                          {newJob.questions.map((q, i) => (
+                            <div key={i} className="flex gap-2">
+                              <input 
+                                value={q} 
+                                onChange={(e) => {
+                                  const newQ = [...newJob.questions];
+                                  newQ[i] = e.target.value;
+                                  setNewJob(prev => ({ ...prev, questions: newQ }));
+                                }} 
+                                placeholder={`Question ${i + 1}`} 
+                                className="flex-1 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" 
+                              />
+                              <button onClick={() => {
+                                const newQ = newJob.questions.filter((_, idx) => idx !== i);
+                                setNewJob(prev => ({ ...prev, questions: newQ.length ? newQ : [''] }));
+                              }} className="p-2 text-slate-400 hover:text-red-500">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                          <button onClick={() => setNewJob(prev => ({ ...prev, questions: [...prev.questions, ''] }))} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                            <Plus size={14} /> Add another question
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </section>
-            </div>
-          )}
 
-          {/* ───── Create Stages Tab ───── */}
-          {activeTab === 'stages' && (
-            <section className="rounded-[28px] border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
-              {renderJobSelector()}
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Stage builder</p>
-                  <h2 className="mt-2 text-[42px] font-black leading-tight tracking-[-0.05em] text-[var(--text-headers)]">{selectedJob?.title || 'Select a role'}</h2>
-                </div>
-                <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600">{selectedJob?.stages.length || 0} stages</span>
-              </div>
-
-              {/* Stage form */}
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px_auto]">
-                <input value={newStage.name} onChange={(e) => setNewStage((prev) => ({ ...prev, name: e.target.value }))} placeholder="Stage name" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-3 text-sm outline-none focus:border-emerald-400" />
-                <select value={newStage.interviewerId} onChange={(e) => setNewStage((prev) => ({ ...prev, interviewerId: e.target.value }))} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-3 text-sm outline-none focus:border-emerald-400">
-                  <option value="">Select interviewer</option>
-                  {data.interviewers.filter((person) => person.role === 'interviewer').map((person) => (
-                    <option key={person.id} value={person.id}>{person.name}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-2">
-                  <button onClick={editingStageId ? updateStage : addStage} className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:translate-y-[-1px]">
-                    {editingStageId ? 'Update stage' : 'Add stage'}
-                  </button>
-                  {editingStageId && (
-                    <button onClick={cancelEdit} className="flex h-[46px] w-[46px] items-center justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] transition hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20" aria-label="Cancel editing">
-                      <X size={18} />
+                    <button onClick={addJob} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5">
+                      <Plus size={16} /> Add job
                     </button>
-                  )}
-                </div>
-              </div>
+                  </section>
 
-              {/* Editing indicator */}
-              {editingStageId && (
-                <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                  <Pencil size={13} />
-                  Editing stage — make changes above and click &quot;Update stage&quot; or cancel
-                </div>
-              )}
-
-              {/* Stage list */}
-              <div className="mt-6 space-y-3">
-                {(!selectedJob?.stages || selectedJob.stages.length === 0) ? (
-                  <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)]/50 p-8 text-center">
-                    <Layers size={32} className="text-[var(--text-muted)] opacity-40" />
-                    <p className="text-sm font-semibold text-[var(--text-muted)]">No stages created yet</p>
-                    <p className="text-xs text-[var(--text-muted)]">Add your first interview stage above to get started</p>
-                  </div>
-                ) : (
-                  selectedJob.stages.map((stage, index) => (
-                    <div
-                      key={stage.id}
-                      className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 transition-all duration-200 hover:shadow-md ${editingStageId === stage.id ? 'stage-card-editing' : ''}`}
+                  <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                    <div className="mb-5">
+                      <h2 className="text-xl font-bold text-[var(--text-headers)]">All Roles</h2>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {data.jobs.map((job) => (
+                        <div key={job.id} className="flex flex-col justify-between rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 transition-shadow hover:shadow-md">
+                          <div>
+                            <h3 className="text-lg font-bold text-[var(--text-headers)]">{job.title}</h3>
+                            <p className="mt-1 text-sm text-[var(--text-muted)]">{job.department || job.type}</p>
+                            <p className="mt-3 inline-flex items-center rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-600">
+                              {job.candidates?.length || 0} candidates
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setViewingJobDetails(job);
+                              setSelectedJobId(job.id);
+                              setEditingJobDetails({ 
+                                title: job.title, 
+                                department: job.department || job.type || 'General', 
+                                expiresAt: job.expiresAt || '',
+                                passingThreshold: job.passingThreshold ?? 70,
+                                questions: Array.isArray(job.questions) ? job.questions : []
+                              });
+                            }}
+                            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20"
+                          >
+                            <Eye size={16} /> View Details
+                          </button>
+                        </div>
+                      ))}
+                      {data.jobs.length === 0 && (
+                        <div className="col-span-full rounded-2xl border border-dashed border-[var(--border-color)] py-10 text-center text-sm text-[var(--text-muted)]">
+                          No jobs created yet. Create one above.
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      onClick={() => { setViewingJobDetails(null); setSelectedJobId(''); }}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
                     >
+                      <ChevronRight size={16} className="rotate-180" /> Back to Jobs
+                    </button>
+                    <button onClick={() => handleDeleteJob(viewingJobDetails.id)} disabled={readOnly} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${readOnly ? 'bg-slate-100 text-slate-400 dark:bg-slate-800' : 'bg-red-500/10 text-red-600 hover:bg-red-500/20'}`}>
+                      <Trash2 size={16} /> Delete Role
+                    </button>
+                  </div>
+
+                  <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                    <div className="mb-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Job Details</p>
+                      <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Edit role information</h2>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <input value={editingJobDetails.title} onChange={(e) => setEditingJobDetails((prev) => ({ ...prev, title: e.target.value }))} placeholder="Role title" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      <input value={editingJobDetails.department} onChange={(e) => setEditingJobDetails((prev) => ({ ...prev, department: e.target.value }))} placeholder="Department" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
                       <div>
-                        <p className="text-[20px] font-semibold text-[var(--text-headers)]">{index + 1}. {stage.name}</p>
-                        <p className="mt-1 text-sm text-[var(--text-muted)]">Assigned interviewer: {stage.interviewer || 'Unassigned'}</p>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">Expiration Date (Optional)</label>
+                        <input type="date" value={editingJobDetails.expiresAt || ''} onChange={(e) => setEditingJobDetails((prev) => ({ ...prev, expiresAt: e.target.value }))} className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingStageId(stage.id);
-                            setNewStage({ name: stage.name, interviewerId: stage.interviewer || '' });
-                          }}
-                          className={`flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] text-[var(--text-headers)] transition hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 ${editingStageId === stage.id ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'bg-white dark:bg-slate-800'}`}
-                          aria-label="Edit stage"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button onClick={() => deleteStage(stage.id)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600 transition hover:bg-red-500/20" aria-label="Delete stage">
-                          <Trash2 size={16} />
-                        </button>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-500 mb-1">AI Passing Score Threshold (0-100)</label>
+                        <input type="number" min="0" max="100" value={editingJobDetails.passingThreshold} onChange={(e) => setEditingJobDetails((prev) => ({ ...prev, passingThreshold: e.target.value }))} placeholder="70" className="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" />
+                      </div>
+
+                      <div className="md:col-span-2 mt-2">
+                        <label className="block text-xs font-semibold text-slate-500 mb-2">Screening Questions</label>
+                        <div className="space-y-3">
+                          {editingJobDetails.questions.map((q, i) => (
+                            <div key={i} className="flex gap-2">
+                              <input 
+                                value={q} 
+                                onChange={(e) => {
+                                  const newQ = [...editingJobDetails.questions];
+                                  newQ[i] = e.target.value;
+                                  setEditingJobDetails(prev => ({ ...prev, questions: newQ }));
+                                }} 
+                                placeholder={`Question ${i + 1}`} 
+                                className="flex-1 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm outline-none focus:border-emerald-400" 
+                              />
+                              <button onClick={() => {
+                                const newQ = editingJobDetails.questions.filter((_, idx) => idx !== i);
+                                setEditingJobDetails(prev => ({ ...prev, questions: newQ.length ? newQ : [''] }));
+                              }} className="p-2 text-slate-400 hover:text-red-500">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                          <button onClick={() => setEditingJobDetails(prev => ({ ...prev, questions: [...prev.questions, ''] }))} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                            <Plus size={14} /> Add another question
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </section>
+
+                    <button onClick={updateJobDetails} disabled={readOnly} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 disabled:opacity-50">
+                      Save Changes
+                    </button>
+                  </section>
+
+                  <section className="rounded-[28px] border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Stage builder</p>
+                        <h2 className="mt-2 text-[32px] font-black leading-tight tracking-[-0.05em] text-[var(--text-headers)]">Job Stages</h2>
+                      </div>
+                      <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600">{selectedJob?.stages.length || 0} stages</span>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                      <input value={newStage.name} onChange={(e) => setNewStage((prev) => ({ ...prev, name: e.target.value }))} placeholder="Stage name" className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-3 text-sm outline-none focus:border-emerald-400" />
+                      <div className="flex items-center gap-2">
+                        <button onClick={editingStageId ? updateStage : addStage} disabled={readOnly} className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:translate-y-[-1px] disabled:opacity-50">
+                          {editingStageId ? 'Update stage' : 'Add stage'}
+                        </button>
+                        {editingStageId && (
+                          <button onClick={cancelEdit} className="flex h-[46px] w-[46px] items-center justify-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] transition hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20" aria-label="Cancel editing">
+                            <X size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {editingStageId && (
+                      <div className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                        <Pencil size={13} />
+                        Editing stage — make changes above and click &quot;Update stage&quot; or cancel
+                      </div>
+                    )}
+
+                    <div className="mt-6 space-y-3">
+                      {(!selectedJob?.stages || selectedJob.stages.length === 0) ? (
+                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)]/50 p-8 text-center">
+                          <Layers size={32} className="text-[var(--text-muted)] opacity-40" />
+                          <p className="text-sm font-semibold text-[var(--text-muted)]">No stages created yet</p>
+                          <p className="text-xs text-[var(--text-muted)]">Add your first interview stage above to get started</p>
+                        </div>
+                      ) : (
+                        selectedJob.stages.map((stage, index) => (
+                          <div
+                            key={stage.id}
+                            className={`flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 transition-all duration-200 hover:shadow-md ${editingStageId === stage.id ? 'stage-card-editing' : ''}`}
+                          >
+                            <div>
+                              <p className="text-[20px] font-semibold text-[var(--text-headers)]">{index + 1}. {stage.name}</p>
+                              <p className="mt-1 text-sm text-[var(--text-muted)]">Assigned interviewer: {stage.interviewer || 'Unassigned'}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingStageId(stage.id);
+                                  setNewStage({ name: stage.name, interviewerId: stage.interviewer || '' });
+                                }}
+                                disabled={readOnly}
+                                className={`flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--border-color)] text-[var(--text-headers)] transition hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 ${editingStageId === stage.id ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'bg-white dark:bg-slate-800'}`}
+                                aria-label="Edit stage"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button onClick={() => deleteStage(stage.id)} disabled={readOnly} className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600 transition hover:bg-red-500/20" aria-label="Delete stage">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
+                </>
+              )}
+            </div>
           )}
 
           {/* ───── Assign Interviewers Tab ───── */}
@@ -567,7 +782,7 @@ const HrPipelinePortal = () => {
           {/* ───── Directory Tab ───── */}
           {activeTab === 'directory' && (
             <section className="space-y-6">
-              <div className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+              <div className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 p-8 shadow-2xl shadow-black/5 backdrop-blur-2xl dark:bg-black/40">
                 <div className="mb-6 border-b border-[var(--border-color)] pb-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Candidate Directory</p>
                   <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">All Candidates</h2>
@@ -590,9 +805,9 @@ const HrPipelinePortal = () => {
                       <h3 className="mb-3 text-lg font-bold text-[var(--text-headers)]">{category}</h3>
                       <div className="space-y-3">
                         {filteredCandidates.map((candidate) => (
-                          <div key={candidate.id} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 transition-all duration-200 hover:shadow-md">
+                          <div key={candidate.id} className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/5 hover:-translate-y-1">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-4">
                                 {candidate.photoUrl ? (
                                   <img src={candidate.photoUrl} alt={candidate.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-emerald-500/20" />
                                 ) : (
@@ -635,9 +850,9 @@ const HrPipelinePortal = () => {
 
           {/* ───── Kanban Board Tab ───── */}
           {activeTab === 'kanban' && (
-            <section className="rounded-3xl border border-[var(--border-color)] bg-white/70 p-5 shadow-[var(--shadow-soft)] dark:bg-slate-900/80">
+            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 p-8 shadow-2xl shadow-black/5 backdrop-blur-2xl dark:bg-black/40 overflow-hidden">
               {renderJobSelector()}
-              <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="mb-6 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Kanban board</p>
                   <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">Pipeline</h2>
@@ -647,24 +862,24 @@ const HrPipelinePortal = () => {
 
               <div className="grid gap-4 xl:grid-cols-4">
                 {selectedJob?.stages.map((stage, index) => (
-                  <div key={stage.id} className="min-h-[260px] rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3">
-                    <div className="mb-3 flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-3">
-                      <h3 className="font-bold text-[var(--text-headers)]">{stage.name}</h3>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <div key={stage.id} className="min-h-[300px] rounded-[2rem] border border-[var(--border-color)] bg-[var(--bg-primary)]/50 p-4">
+                    <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-4">
+                      <h3 className="font-bold text-[var(--text-headers)] text-lg">{stage.name}</h3>
+                      <span className="rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] px-3 py-1 text-xs font-bold text-[var(--text-muted)]">
                         {(selectedJob.candidates || []).filter((candidate) => candidate.stage === stage.id).length}
                       </span>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {(() => {
                         const stageCandidates = (selectedJob.candidates || []).filter(
                           (candidate) => candidate.stage === stage.id && candidate.status !== 'Failed' && candidate.status !== 'Hired'
                         );
                         if (stageCandidates.length === 0) {
-                          return <div className="rounded-2xl border border-dashed border-[var(--border-color)] p-4 text-center text-sm text-[var(--text-muted)]">No candidates in this stage</div>;
+                          return <div className="rounded-[1.5rem] border border-dashed border-[var(--border-color)] p-6 text-center text-sm font-medium text-[var(--text-muted)]">No candidates</div>;
                         }
                         return stageCandidates.map((candidate) => (
-                            <div key={candidate.id} className="rounded-2xl border border-[var(--border-color)] bg-white/70 p-3 shadow-sm transition-all duration-200 hover:shadow-md dark:bg-slate-800/80">
+                            <div key={candidate.id} className="rounded-[1.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/5 hover:-translate-y-1">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                   {candidate.photoUrl ? (
@@ -720,7 +935,7 @@ const HrPipelinePortal = () => {
               </div>
               <div className="rounded-2xl border border-[var(--border-color)] bg-white p-4 dark:bg-slate-900">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Interviewer Score</p>
-                <p className="mt-1 text-3xl font-black text-[var(--text-headers)]">{viewingCandidate.hasSubmittedFeedback ? `${viewingCandidate.score} / 5` : 'N/A'}</p>
+                <p className="mt-1 text-3xl font-black text-[var(--text-headers)]">{viewingCandidate.hasSubmittedFeedback ? `${viewingCandidate.score} / 10` : 'N/A'}</p>
               </div>
               <div className="rounded-2xl border border-[var(--border-color)] bg-white p-4 dark:bg-slate-900">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Feedback notes</p>
