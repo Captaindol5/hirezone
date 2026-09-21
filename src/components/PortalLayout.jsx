@@ -34,8 +34,8 @@ const PortalLayout = ({ title, subtitle, profileName, children }) => {
               {darkMode ? <SunMedium size={18} /> : <MoonStar size={18} />}
             </button>
             <NotificationBell />
-            <button onClick={handleLogout} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition hover:translate-y-[-1px]">
-              <LogOut size={16} />
+            <button onClick={handleLogout} className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.1em] text-white bg-gray-900 dark:bg-white dark:text-gray-900 px-6 py-2.5 rounded-full hover:bg-orange-500 dark:hover:bg-orange-500 dark:hover:text-white transition-all group uppercase">
+              <LogOut size={16} className="transition-transform group-hover:-translate-x-1" />
               Logout
             </button>
           </div>

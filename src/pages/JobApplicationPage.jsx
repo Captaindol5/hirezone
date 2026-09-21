@@ -198,179 +198,184 @@ const JobApplicationPage = () => {
 
   // ─── Main UI ──────────────────────────────────────────────────────────────
   return (
-    <div className="landing-shell min-h-screen relative font-sans selection:bg-orange-500/30 selection:text-orange-900 dark:selection:text-orange-100 pb-32">
-      <TopNav />
+    <div className="landing-shell min-h-screen relative font-sans bg-[#fbfbfc] dark:bg-[#050505] text-gray-900 dark:text-gray-100 transition-colors selection:bg-orange-500/30 pb-32">
+      
+      {/* Subtle Grid Background */}
+      <div className="absolute inset-0 z-0 opacity-50 dark:opacity-20 pointer-events-none bg-[linear-gradient(to_right,#8080801a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      <div className="relative z-10 w-full max-w-3xl mx-auto mt-16 px-6">
-        
-        {/* Job header */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 mb-6">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold tracking-widest uppercase">Open Role</span>
-          </div>
-          <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-extrabold tracking-tighter text-[var(--text-headers)] leading-[1.05] mb-6">{job.title}</h1>
-          <div className="flex flex-wrap gap-6">
-            <span className="flex items-center gap-2 text-[var(--text-muted)] text-base font-semibold">
-              <Briefcase size={18} /> {job.department || job.type || 'General'}
-            </span>
-            <span className="flex items-center gap-2 text-[var(--text-muted)] text-base font-semibold">
-              <MapPin size={18} /> {job.location || 'Remote'}
-            </span>
-          </div>
-        </div>
+      <div className="relative z-10">
+        <TopNav />
 
-        {/* Application Form */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-[2rem] p-6 flex gap-4 items-start mb-8">
-            <Sparkles size={24} className="text-orange-500 shrink-0 mt-1" />
-            <div>
-              <p className="text-orange-600 dark:text-orange-400 font-bold text-lg mb-1 tracking-tight">AI-Powered Screening</p>
-              <p className="text-[var(--text-muted)] font-medium">
-                Upload your CV and answer the questions below. Our AI will instantly evaluate your application for this role.
-              </p>
+        <div className="w-full max-w-3xl mx-auto mt-16 px-6">
+          
+          {/* Job header */}
+          <div className="mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 mb-6 rounded-none">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400 text-xs font-bold tracking-widest uppercase">Open Role</span>
+            </div>
+            <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-extrabold tracking-tighter text-orange-500 leading-[1.05] mb-6">{job.title}</h1>
+            <div className="flex flex-wrap gap-6">
+              <span className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm font-bold tracking-widest uppercase">
+                <Briefcase size={16} /> {job.department || job.type || 'General'}
+              </span>
+              <span className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm font-bold tracking-widest uppercase">
+                <MapPin size={16} /> {job.location || 'Remote'}
+              </span>
             </div>
           </div>
 
-          <form onSubmit={submitApplication} className="bg-[var(--bg-secondary)]/60 backdrop-blur-2xl border border-[var(--border-color)] rounded-[2.5rem] p-8 md:p-10 shadow-2xl shadow-black/5">
-            <h2 className="text-2xl font-extrabold text-[var(--text-headers)] tracking-tight mb-8">Your Details</h2>
-
-            <div className="grid gap-6 md:grid-cols-2 mb-6">
-              {[
-                { icon: User, label: 'Full Name *', key: 'name', type: 'text', placeholder: 'e.g. Saman Perera' },
-                { icon: Mail, label: 'Email Address *', key: 'email', type: 'email', placeholder: 'you@email.com' },
-              ].map(({ icon: Icon, label, key, type, placeholder }) => (
-                <div key={key}>
-                  <label className="flex items-center gap-2 text-[var(--text-headers)] text-sm font-bold mb-3 ml-1">
-                    <Icon size={16} className="text-[var(--text-muted)]" /> {label}
-                  </label>
-                  <input
-                    type={type}
-                    value={form[key]}
-                    onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                    placeholder={placeholder}
-                    disabled={isProcessing}
-                    required
-                    className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border-color)] rounded-[1.5rem] py-4 px-5 text-[var(--text-headers)] text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
-                  />
-                </div>
-              ))}
+          {/* Application Form */}
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 p-6 flex gap-4 items-start mb-8 rounded-none">
+              <Sparkles size={24} className="text-orange-500 shrink-0 mt-1" />
+              <div>
+                <p className="text-orange-600 dark:text-orange-400 font-bold text-sm tracking-widest uppercase mb-1">AI-Powered Screening</p>
+                <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">
+                  Upload your CV and answer the questions below. Our AI will instantly evaluate your application for this role.
+                </p>
+              </div>
             </div>
 
-            <div className="mb-8">
-              <label className="flex items-center gap-2 text-[var(--text-headers)] text-sm font-bold mb-3 ml-1">
-                <Phone size={16} className="text-[var(--text-muted)]" /> Phone Number <span className="text-[var(--text-muted)] font-normal">(optional)</span>
-              </label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="+94 71 234 5678"
-                disabled={isProcessing}
-                className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border-color)] rounded-[1.5rem] py-4 px-5 text-[var(--text-headers)] text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
-              />
-            </div>
+            <form onSubmit={submitApplication} className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 p-8 md:p-12 shadow-2xl shadow-black/5 rounded-none">
+              <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-10">Your Details.</h2>
 
-            <div className="mb-12">
-              <label className="flex items-center gap-2 text-[var(--text-headers)] text-sm font-bold mb-3 ml-1">
-                <FileText size={16} className="text-[var(--text-muted)]" /> CV / Resume (PDF) *
-              </label>
-              {!pdfFile ? (
-                <div
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-[2rem] p-10 text-center transition-all duration-300 ${isProcessing ? 'cursor-not-allowed opacity-50 border-[var(--border-color)]' : 'cursor-pointer border-orange-500/30 bg-orange-500/5 hover:border-orange-500 hover:bg-orange-500/10'}`}
-                >
-                  {isExtracting ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <Loader2 size={36} className="text-orange-500 animate-spin" />
-                      <p className="text-[var(--text-muted)] font-semibold text-lg">Reading your PDF…</p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500/10 flex items-center justify-center">
-                        <UploadCloud size={32} className="text-orange-500" />
+              <div className="grid gap-8 md:grid-cols-2 mb-8">
+                {[
+                  { icon: User, label: 'Full Name *', key: 'name', type: 'text', placeholder: 'e.g. Saman Perera' },
+                  { icon: Mail, label: 'Email Address *', key: 'email', type: 'email', placeholder: 'you@email.com' },
+                ].map(({ icon: Icon, label, key, type, placeholder }) => (
+                  <div key={key}>
+                    <label className="flex items-center gap-2 text-xs font-bold tracking-widest text-gray-400 uppercase mb-2">
+                      <Icon size={14} className="text-gray-400" /> {label}
+                    </label>
+                    <input
+                      type={type}
+                      value={form[key]}
+                      onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      disabled={isProcessing}
+                      required
+                      className="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-3 text-gray-900 dark:text-white text-lg outline-none focus:border-orange-500 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-700 rounded-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="mb-12">
+                <label className="flex items-center gap-2 text-xs font-bold tracking-widest text-gray-400 uppercase mb-2">
+                  <Phone size={14} className="text-gray-400" /> Phone Number <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                </label>
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="+94 71 234 5678"
+                  disabled={isProcessing}
+                  className="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-3 text-gray-900 dark:text-white text-lg outline-none focus:border-orange-500 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-700 rounded-none"
+                />
+              </div>
+
+              <div className="mb-12">
+                <label className="flex items-center gap-2 text-xs font-bold tracking-widest text-gray-400 uppercase mb-4">
+                  <FileText size={14} className="text-gray-400" /> CV / Resume (PDF) *
+                </label>
+                {!pdfFile ? (
+                  <div
+                    onClick={() => !isProcessing && fileInputRef.current?.click()}
+                    className={`border border-dashed p-10 text-center transition-all duration-300 rounded-none ${isProcessing ? 'cursor-not-allowed opacity-50 border-gray-300' : 'cursor-pointer border-orange-500/50 bg-orange-500/5 hover:border-orange-500 hover:bg-orange-500/10'}`}
+                  >
+                    {isExtracting ? (
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 size={36} className="text-orange-500 animate-spin" />
+                        <p className="text-gray-500 font-bold tracking-widest text-xs uppercase">Reading your PDF…</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-white dark:bg-black border border-orange-200 dark:border-orange-900 flex items-center justify-center rounded-none shadow-sm">
+                          <UploadCloud size={32} className="text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 dark:text-white text-lg font-bold">Click to upload your CV</p>
+                          <p className="text-gray-500 font-bold tracking-widest text-[10px] uppercase mt-2">PDF only · Max 5MB</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-5 rounded-none">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white dark:bg-black border border-emerald-200 dark:border-emerald-900 flex items-center justify-center rounded-none shadow-sm">
+                        <FileText size={24} className="text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <p className="text-[var(--text-headers)] text-lg font-bold">Click to upload your CV</p>
-                        <p className="text-[var(--text-muted)] font-medium mt-1">PDF only · Max 5MB</p>
+                        <p className="text-gray-900 dark:text-white font-bold text-base">{pdfFile.name}</p>
+                        <p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold tracking-widest uppercase mt-1">✓ Extracted successfully</p>
                       </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-[1.5rem] p-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[1rem] bg-emerald-500/20 flex items-center justify-center">
-                      <FileText size={24} className="text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-[var(--text-headers)] font-bold text-base">{pdfFile.name}</p>
-                      <p className="text-emerald-600 dark:text-emerald-400 text-sm font-semibold mt-1">✓ CV text extracted successfully</p>
-                    </div>
+                    {!isProcessing && (
+                      <button type="button" onClick={clearFile} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-none transition-colors">
+                        <X size={20} />
+                      </button>
+                    )}
                   </div>
-                  {!isProcessing && (
-                    <button type="button" onClick={clearFile} className="p-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors">
-                      <X size={20} />
-                    </button>
-                  )}
+                )}
+                <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} disabled={isProcessing} className="hidden" />
+                {pdfError && <p className="text-red-500 text-sm font-bold mt-3 flex items-center gap-2"><AlertCircle size={16} /> {pdfError}</p>}
+              </div>
+
+              {job.questions && job.questions.length > 0 && (
+                <div className="mb-12">
+                  <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-8">Screening Questions.</h2>
+                  <div className="space-y-8">
+                    {job.questions.map((q, i) => (
+                      <div key={i}>
+                        <label className="block text-gray-900 dark:text-white text-sm font-bold mb-3">
+                          {i + 1}. {q} <span className="text-orange-500">*</span>
+                        </label>
+                        <textarea
+                          value={answers[i] || ''}
+                          onChange={(e) => setAnswers(prev => ({ ...prev, [i]: e.target.value }))}
+                          placeholder="Type your answer here..."
+                          disabled={isProcessing}
+                          required
+                          rows={4}
+                          className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 text-gray-900 dark:text-white text-base outline-none focus:border-orange-500 transition-colors font-medium resize-none rounded-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileChange} disabled={isProcessing} className="hidden" />
-              {pdfError && <p className="text-red-500 text-sm font-semibold mt-3 flex items-center gap-2"><AlertCircle size={16} /> {pdfError}</p>}
-            </div>
 
-            {job.questions && job.questions.length > 0 && (
-              <div className="mb-12">
-                <h2 className="text-2xl font-extrabold text-[var(--text-headers)] tracking-tight mb-8">Screening Questions</h2>
-                <div className="space-y-8">
-                  {job.questions.map((q, i) => (
-                    <div key={i}>
-                      <label className="block text-[var(--text-headers)] text-base font-bold mb-3 ml-1">
-                        {i + 1}. {q} <span className="text-orange-500">*</span>
-                      </label>
-                      <textarea
-                        value={answers[i] || ''}
-                        onChange={(e) => setAnswers(prev => ({ ...prev, [i]: e.target.value }))}
-                        placeholder="Type your answer here..."
-                        disabled={isProcessing}
-                        required
-                        rows={4}
-                        className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border-color)] rounded-[1.5rem] py-4 px-5 text-[var(--text-headers)] text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium resize-none"
-                      />
-                    </div>
-                  ))}
+              {errorMsg && (
+                <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-5 mb-6 flex gap-3 items-start rounded-none">
+                  <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-red-700 dark:text-red-400 font-bold">{errorMsg}</p>
                 </div>
-              </div>
-            )}
-
-            {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[1.5rem] p-5 mb-6 flex gap-3 items-start">
-                <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
-                <p className="text-red-700 dark:text-red-400 font-semibold">{errorMsg}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!pdfFile || isExtracting || isProcessing}
-              className={`w-full rounded-[1.5rem] py-5 text-white text-lg font-bold flex items-center justify-center gap-3 transition-all duration-300 ${(!pdfFile || isExtracting || isProcessing) ? 'bg-[var(--border-color)] text-[var(--text-muted)] cursor-not-allowed' : 'bg-gradient-to-r from-orange-500 to-orange-600 shadow-xl shadow-orange-500/20 hover:scale-[1.02]'}`}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 size={22} className="animate-spin" /> Evaluating Application...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={22} /> {pdfFile ? 'Submit & Evaluate' : 'Upload CV to continue'}
-                </>
               )}
-            </button>
-          </form>
+
+              <button
+                type="submit"
+                disabled={!pdfFile || isExtracting || isProcessing}
+                className={`w-full py-5 text-sm font-bold tracking-widest uppercase flex items-center justify-center gap-3 transition-all duration-300 rounded-none ${(!pdfFile || isExtracting || isProcessing) ? 'bg-gray-100 dark:bg-gray-900 text-gray-400 cursor-not-allowed' : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-orange-500 dark:hover:bg-orange-500 hover:text-white'}`}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={22} className="animate-spin" /> Evaluating Application...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} /> {pdfFile ? 'Submit & Evaluate' : 'Upload CV to continue'}
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
         </div>
-
       </div>
     </div>
   );
 };
-
 export default JobApplicationPage;

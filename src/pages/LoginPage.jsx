@@ -28,55 +28,52 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="landing-shell min-h-screen relative font-sans selection:bg-orange-500/30 selection:text-orange-900 dark:selection:text-orange-100 flex items-center justify-center p-6">
-      {/* Background decorations */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+    <div className="landing-shell min-h-screen relative font-sans bg-[#fbfbfc] dark:bg-[#050505] text-gray-900 dark:text-gray-100 transition-colors selection:bg-orange-500/30 flex items-center justify-center p-6">
+      
+      {/* Subtle Grid Background */}
+      <div className="absolute inset-0 z-0 opacity-50 dark:opacity-20 pointer-events-none bg-[linear-gradient(to_right,#8080801a_1px,transparent_1px),linear-gradient(to_bottom,#8080801a_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      <div className="relative w-full max-w-md bg-[var(--bg-secondary)]/80 backdrop-blur-3xl border border-[var(--border-color)] rounded-[2.5rem] p-10 shadow-2xl shadow-black/5 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-md bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 p-12 shadow-2xl shadow-black/5 flex flex-col items-center rounded-2xl">
         
-        <Link to="/" className="absolute top-6 left-6 text-[var(--text-muted)] hover:text-orange-500 transition-colors p-2 bg-[var(--bg-primary)]/50 rounded-full">
+        <Link to="/" className="absolute top-6 left-6 text-gray-400 hover:text-orange-500 transition-colors p-2">
           <ArrowLeft size={20} />
         </Link>
-        <div className="absolute top-8 right-8 flex items-center gap-2 text-emerald-500 text-sm font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+        <div className="absolute top-8 right-8 flex items-center gap-2 text-emerald-500 text-xs tracking-widest font-bold uppercase">
           <ShieldCheck size={16} /> Secure
         </div>
 
-        <div className="mb-10 flex justify-center mt-4">
-          <img src="/logo.png" alt="HireZone Logo" className="h-16 object-contain dark:hidden" />
-          <img src="/logo-dark.png" alt="HireZone Logo" className="h-16 object-contain hidden dark:block" />
+        <div className="mb-10 flex justify-center mt-6">
+          <img src="/logo.png" alt="HireZone Logo" className="h-10 object-contain dark:hidden" />
+          <img src="/logo-dark.png" alt="HireZone Logo" className="h-10 object-contain hidden dark:block" />
         </div>
 
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30">
-            <LockKeyhole size={28} />
-          </div>
-          <h1 className="text-3xl font-extrabold text-[var(--text-headers)] tracking-tight">Welcome back</h1>
-          <p className="text-[var(--text-muted)] mt-2 font-medium">Sign in to the HireZone Portal</p>
+        <div className="text-center mb-10 w-full">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Welcome back.</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm font-medium">Sign in to the HireZone Portal</p>
         </div>
 
-        <form onSubmit={handleLogin} className="w-full space-y-5">
+        <form onSubmit={handleLogin} className="w-full space-y-6">
           <div>
-            <label className="block text-sm font-bold text-[var(--text-headers)] mb-2 ml-1">Email address</label>
+            <label className="block text-xs font-bold tracking-widest text-gray-400 uppercase mb-2">Email address</label>
             <input 
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               placeholder="name@company.com" 
               required 
-              className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border-color)] rounded-full py-4 px-6 text-[var(--text-headers)] text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+              className="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-3 text-gray-900 dark:text-white text-lg outline-none focus:border-orange-500 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-700 rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-[var(--text-headers)] mb-2 ml-1">Password</label>
+            <label className="block text-xs font-bold tracking-widest text-gray-400 uppercase mb-2">Password</label>
             <input 
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               placeholder="Enter password" 
               required 
-              className="w-full bg-[var(--bg-primary)]/50 border border-[var(--border-color)] rounded-full py-4 px-6 text-[var(--text-headers)] text-base outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+              className="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-3 text-gray-900 dark:text-white text-lg outline-none focus:border-orange-500 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-700 rounded-none"
             />
           </div>
 
@@ -85,7 +82,7 @@ const LoginPage = () => {
           <button 
             type="submit" 
             disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold text-lg rounded-full py-4 mt-4 shadow-xl shadow-orange-500/20 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+            className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm tracking-widest uppercase rounded-xl py-5 mt-8 hover:bg-orange-500 dark:hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-50"
           >
             {isSubmitting ? 'Authenticating...' : 'Sign in to portal'}
           </button>

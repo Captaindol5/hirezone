@@ -7,49 +7,60 @@ const TopNav = () => {
   const location = useLocation();
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Features', path: '/features' },
-    { name: 'Careers', path: '/careers' },
+    { name: 'HOME', path: '/' },
+    { name: 'FEATURES', path: '/features' },
+    { name: 'CAREERS', path: '/careers' },
   ];
 
   return (
-    <header className="topbar relative z-40 max-w-[1400px] mx-auto mt-6">
-      <div className="flex items-center gap-3">
+    <header className="topbar relative z-40 w-full flex items-center justify-between px-8 py-6 bg-white/80 dark:bg-[#0f1115]/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 transition-colors">
+      
+      {/* Left: Logo */}
+      <div className="flex items-center w-1/4">
         <Link to="/">
-          <img src="/logo.png" alt="HireZone" className="h-12 dark:hidden" />
-          <img src="/logo-dark.png" alt="HireZone" className="h-12 hidden dark:block" />
+          <img src="/logo.png" alt="HireZone" className="h-8 md:h-10 dark:hidden object-contain" />
+          <img src="/logo-dark.png" alt="HireZone" className="h-8 md:h-10 hidden dark:block object-contain" />
         </Link>
       </div>
 
-      <nav className="nav-actions flex items-center gap-2">
-        <div className="hidden md:flex items-center gap-1 mr-4 bg-[var(--bg-primary)]/50 p-1 rounded-full border border-[var(--border-color)]">
-          {navLinks.map((link) => {
-            const isActive = location.pathname === link.path;
-            return (
-              <Link
-                key={link.name}
-                to={link.path}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-                  isActive 
-                    ? 'bg-white dark:bg-slate-800 text-[var(--text-headers)] shadow-sm' 
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-headers)] hover:bg-black/5 dark:hover:bg-white/5'
-                }`}
-              >
-                {link.name}
-              </Link>
-            );
-          })}
-        </div>
+      {/* Center: Navigation Links */}
+      <nav className="hidden md:flex items-center justify-center w-2/4 gap-12">
+        {navLinks.map((link) => {
+          const isActive = location.pathname === link.path;
+          return (
+            <Link
+              key={link.name}
+              to={link.path}
+              className={`text-xs font-bold tracking-[0.2em] transition-all hover:text-orange-500 ${
+                isActive 
+                  ? 'text-orange-500' 
+                  : 'text-gray-900 dark:text-gray-200'
+              }`}
+            >
+              {link.name}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <button onClick={toggleTheme} className="icon-btn !rounded-full" aria-label="Toggle theme">
-          {darkMode ? <SunMedium size={18} /> : <MoonStar size={18} />}
+      {/* Right: Actions */}
+      <div className="flex items-center justify-end w-1/4 gap-4">
+        <button 
+          onClick={toggleTheme} 
+          className="text-gray-500 hover:text-orange-500 transition-colors" 
+          aria-label="Toggle theme"
+        >
+          {darkMode ? <SunMedium size={20} /> : <MoonStar size={20} />}
         </button>
 
-        <Link to="/login" className="primary-btn group !rounded-full !px-6 !text-sm flex items-center gap-2 shadow-xl shadow-orange-500/20 ml-2">
-          Portal Login
+        <Link 
+          to="/login" 
+          className="hidden md:flex items-center gap-2 text-xs font-bold tracking-[0.1em] text-white bg-gray-900 dark:bg-white dark:text-gray-900 px-6 py-2.5 rounded-full hover:bg-orange-500 dark:hover:bg-orange-500 dark:hover:text-white transition-all group"
+        >
+          PORTAL
           <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
         </Link>
-      </nav>
+      </div>
     </header>
   );
 };
