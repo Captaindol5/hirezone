@@ -404,6 +404,12 @@ export const submitCandidateFeedback = async (jobId, candidateId, payload) => {
         'feedback_ready'
       );
     }
+    // Also notify HR team about the completed evaluation
+    createNotification(
+      '1mIpbjxAPBX0kNii8XrjlXmIwdr2',
+      `Interviewer submitted feedback for ${targetCandidate.name} (Score: ${payload.score || ''}/10)`,
+      'feedback_ready'
+    );
   }
 };
 
@@ -682,11 +688,12 @@ export const subscribeToNotifications = (uid, callback) => {
   if (!hasFirestore() || !uid) return () => {};
   const q = query(
     collection(db, 'notifications'),
-    where('recipientUid', '==', uid),
-    orderBy('createdAt', 'desc')
+    where('recipientUid', '==', uid)
   );
   return onSnapshot(q, (snapshot) => {
-    const notifs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const notifs = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     callback(notifs);
   }, (err) => {
     // Silently fail if collection doesn't exist yet or rules deny access
