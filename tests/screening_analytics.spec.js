@@ -36,8 +36,8 @@ test.describe('AI Screening & Executive Analytics', () => {
   test('TC-AI-10a: View AI Screening Report and Resume in Interviewer Portal', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'PORTAL' }).click();
-    await page.getByRole('textbox', { name: 'name@company.com' }).fill('nubaidh@hirezone.com');
-    await page.getByRole('textbox', { name: 'Enter password' }).fill('Nubaidh@123');
+    await page.getByRole('textbox', { name: 'name@company.com' }).fill('abhi@hirezone.com');
+    await page.getByRole('textbox', { name: 'Enter password' }).fill('Abhi@123');
     await page.getByRole('button', { name: 'Sign in to portal' }).click();
 
     // Select candidate from queue dynamically

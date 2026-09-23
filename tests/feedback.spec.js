@@ -4,8 +4,8 @@ test.describe('Feedback Portal & Scorecards', () => {
   test('TC-FEEDBACK-08: Interviewer Accesses Assigned Candidate Queue and Scorecard', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'PORTAL' }).click();
-    await page.getByRole('textbox', { name: 'name@company.com' }).fill('nubaidh@hirezone.com');
-    await page.getByRole('textbox', { name: 'Enter password' }).fill('Nubaidh@123');
+    await page.getByRole('textbox', { name: 'name@company.com' }).fill('abhi@hirezone.com');
+    await page.getByRole('textbox', { name: 'Enter password' }).fill('Abhi@123');
     await page.getByRole('button', { name: 'Sign in to portal' }).click();
 
     // Verify Interviewer queue is displayed
@@ -27,8 +27,8 @@ test.describe('Feedback Portal & Scorecards', () => {
   test('TC-FEEDBACK-09: Interviewer Submits Evaluation Score and Comments', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('link', { name: 'PORTAL' }).click();
-    await page.getByRole('textbox', { name: 'name@company.com' }).fill('nubaidh@hirezone.com');
-    await page.getByRole('textbox', { name: 'Enter password' }).fill('Nubaidh@123');
+    await page.getByRole('textbox', { name: 'name@company.com' }).fill('abhi@hirezone.com');
+    await page.getByRole('textbox', { name: 'Enter password' }).fill('Abhi@123');
     await page.getByRole('button', { name: 'Sign in to portal' }).click();
 
     // Select candidate from the review queue dynamically
