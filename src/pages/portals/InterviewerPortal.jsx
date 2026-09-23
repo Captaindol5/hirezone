@@ -224,7 +224,7 @@ const InterviewerPortal = () => {
                   </div>
                 </div>
 
-                {selectedCandidate.hasSubmittedFeedback || submittedCandidateIds.includes(selectedCandidate.id) ? (
+                {selectedCandidate?.hasSubmittedFeedback === true || submittedCandidateIds.includes(selectedCandidate?.id) ? (
                   <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 flex flex-col items-center justify-center text-center">
                     <ShieldCheck size={48} className="text-emerald-500 mb-4" />
                     <h3 className="text-xl font-bold text-[var(--text-headers)]">Feedback is given</h3>

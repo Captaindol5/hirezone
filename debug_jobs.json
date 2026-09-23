@@ -1,0 +1,95 @@
+[
+  {
+    "id": "8DjEeK6myEOjbENJ8Hy9",
+    "candidates": [],
+    "passingThreshold": 40,
+    "stages": [
+      {
+        "id": "initial-screening",
+        "name": "Initial screening",
+        "interviewer": ""
+      },
+      {
+        "name": "Technical screening",
+        "id": "technical-screening",
+        "interviewer": ""
+      }
+    ],
+    "location": "Remote",
+    "company": "HireZone",
+    "department": "it department",
+    "status": "Open",
+    "expiresAt": "2026-09-25",
+    "questions": [
+      "whats your experience",
+      "what tools are you familiar with"
+    ],
+    "title": "software developer",
+    "type": "it department",
+    "createdAt": 1790177713944
+  },
+  {
+    "id": "CoVZ0M5pVWA8AgErmWFz",
+    "type": "Quality Management",
+    "stages": [
+      {
+        "id": "initial-interview",
+        "interviewer": "abhi",
+        "name": "Initial Interview"
+      },
+      {
+        "name": "Technical Interview",
+        "interviewer": "disney",
+        "id": "technical-interview"
+      },
+      {
+        "id": "final-interview",
+        "interviewer": "malan",
+        "name": "Final Interview"
+      }
+    ],
+    "questions": [
+      "How many years of experience in this field do you have",
+      "What are your best qualities",
+      "Why do you think you'd be a good fit for this role",
+      "Tell us a bit about your work ethic"
+    ],
+    "expiresAt": "2026-09-27",
+    "department": "Quality Management",
+    "candidates": [
+      {
+        "cvText": "NAVIN MANATUNGA  PERSONAL DETAILS  305/1 Bodhirukkarama Road, Pamunugama, Allubhomulla ,, 12500 Panadura naveenmanathunga6@gmail.com, +94706468676 Date of birth: April 16, 2006 Gender: Male Nationality: Srilankan  I consent to the processing of my personal data for the purpose of recruitment for the position to which I am applying. This resume is made with Jobseeker.com.  PROFILE  Motivated and enthusiastic individual eager to contribute positively to the organization. I bring a strong work ethic, a positive attitude, and a commitment to achieving goals. Experienced in relevant skills such as teamwork, communication, problem-solving, or customer service. Dedicated to learning and growing professionally in the industry. Excited about the opportunity to make a meaningful impact and contribute effectively to it.  EDUCATION  Ordinary Levels   Jun 2022 Lyceum International School, Panadura, Srilanka Foundation - Computer Science   Apr 2023 Australian Campus of Business Technology, Colombo 03, Sri Lanka (Hons) Bachelor of Computer Science   Feb 2024 - Present Asia Pacific Institute of Information Technology, Union Place, Colombo  SKILLS  Communication Customer Service Problem-Solving Teamwork Computer Skills  LANGUAGES  English   sinhala",
+        "id": "candidate-1790179957815-gxkpx",
+        "score": 10,
+        "feedback": "sdfghjkjhgcxzsxdfgh",
+        "hasSubmittedFeedback": true,
+        "email": "naveenmanathunga6@gmail.com",
+        "stageLabel": "Technical Interview",
+        "notes": "Phone: +94706468676",
+        "feedbackHistory": [
+          {
+            "feedback": "he was pretty good",
+            "stageName": "Initial Interview",
+            "stageId": "initial-interview",
+            "score": 7,
+            "date": 1790181221495
+          }
+        ],
+        "aiScore": 70,
+        "name": "Navin Manathunga",
+        "source": "self-apply",
+        "createdAt": 1790179958837,
+        "aiSummary": "Traditional ATS Evaluation (AI Unavailable): Candidate achieved a score of 70/100 based on keyword matching, CV completeness, and questionnaire effort.",
+        "stage": "technical-interview",
+        "status": "Ready",
+        "cvUrl": ""
+      }
+    ],
+    "location": "Remote",
+    "title": "Quality Assurance Engineer",
+    "createdAt": 1790061163983,
+    "company": "HireZone",
+    "passingThreshold": 70,
+    "status": "Open"
+  }
+]

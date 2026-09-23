@@ -408,6 +408,7 @@ export const submitCandidateFeedback = async (jobId, candidateId, payload) => {
     const message = `Interviewer submitted feedback for ${targetCandidate.name} (Score: ${payload.score || ''}/10)`;
     createNotification('1mIpbjxAPBX0kNii8XrjlXmIwdr2', message, 'feedback_ready');
     createNotification('d1WIfpLFX0WyzkbJFE9J656fDQn2', message, 'feedback_ready');
+    createNotification('XqI3xQU6rKcAJwF8hajk2Hho5Nl1', message, 'feedback_ready');
   }
 };
 
