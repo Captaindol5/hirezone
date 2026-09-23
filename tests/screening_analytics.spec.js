@@ -8,7 +8,12 @@ test.describe('AI Screening & Executive Analytics', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'CAREERS' }).click();
     await expect(page.getByRole('link', { name: 'APPLY NOW' }).first()).toBeVisible({ timeout: 20000 });
-    await page.getByRole('link', { name: 'APPLY NOW' }).first().click();
+    const qaApplyBtn = page.locator('div').filter({ hasText: 'Quality Assurance Engineer' }).getByRole('link', { name: 'APPLY NOW' }).first();
+    if (await qaApplyBtn.isVisible().catch(() => false)) {
+      await qaApplyBtn.click();
+    } else {
+      await page.getByRole('link', { name: 'APPLY NOW' }).first().click();
+    }
 
     await page.getByRole('textbox', { name: 'e.g. Saman Perera' }).fill('George Smith');
     await page.getByRole('textbox', { name: 'you@email.com' }).fill('nubaidhahamed2006@gmail.com');

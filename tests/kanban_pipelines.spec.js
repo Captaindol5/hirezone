@@ -14,6 +14,12 @@ test.describe('Kanban Board & Custom Pipelines', () => {
     // Open Kanban board
     await page.getByRole('button', { name: 'Kanban board' }).first().click();
 
+    // Ensure Quality Assurance Engineer job pipeline is selected
+    const jobSelect = page.locator('select').filter({ hasText: 'Quality Assurance Engineer' });
+    if (await jobSelect.count() > 0) {
+      await jobSelect.selectOption({ label: 'Quality Assurance Engineer' });
+    }
+
     // Verify pipeline stages are visible
     await expect(page.getByText(/Pipeline|stages|Initial Interview/i).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Kanban board' })).toBeVisible();
@@ -29,6 +35,12 @@ test.describe('Kanban Board & Custom Pipelines', () => {
     // Open Kanban board
     await expect(page.getByText('Quality Assurance Engineer')).toBeVisible({ timeout: 20000 });
     await page.getByRole('button', { name: 'Kanban board' }).first().click();
+
+    // Ensure Quality Assurance Engineer job pipeline is selected
+    const jobSelect = page.locator('select').filter({ hasText: 'Quality Assurance Engineer' });
+    if (await jobSelect.count() > 0) {
+      await jobSelect.selectOption({ label: 'Quality Assurance Engineer' });
+    }
 
     // Verify candidate card is populated in pipeline stage
     await expect(page.getByText(/Navin/i).first()).toBeVisible({ timeout: 15000 });
@@ -51,6 +63,12 @@ test.describe('Kanban Board & Custom Pipelines', () => {
     // Open Kanban board
     await expect(page.getByText('Quality Assurance Engineer')).toBeVisible({ timeout: 20000 });
     await page.getByRole('button', { name: 'Kanban board' }).first().click();
+
+    // Ensure Quality Assurance Engineer job pipeline is selected
+    const jobSelect = page.locator('select').filter({ hasText: 'Quality Assurance Engineer' });
+    if (await jobSelect.count() > 0) {
+      await jobSelect.selectOption({ label: 'Quality Assurance Engineer' });
+    }
 
     // Verify candidate shows "Feedback: Missing" and "Pending" status on Kanban card
     await expect(page.getByText(/Feedback: Missing/i).first()).toBeVisible({ timeout: 15000 });
