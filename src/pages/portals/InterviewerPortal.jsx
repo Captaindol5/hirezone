@@ -59,8 +59,7 @@ const InterviewerPortal = () => {
         return (
           currentStage?.interviewer === activeInterviewerId &&
           candidate.status !== 'Failed' &&
-          candidate.status !== 'Hired' &&
-          !candidate.hasSubmittedFeedback
+          candidate.status !== 'Hired'
         );
       })
       .map((candidate) => ({ 
@@ -68,7 +67,7 @@ const InterviewerPortal = () => {
         jobTitle: job.title, 
         stageLabel: (job.stages || []).find((stage) => stage.id === candidate.stage)?.name || candidate.stage 
       }))
-  ).filter(candidate => !submittedCandidateIds.includes(candidate.id));
+  );
 
   const selectedCandidate = assignedCandidates.find((candidate) => candidate.id === selectedCandidateId) || assignedCandidates[0];
 
@@ -225,42 +224,50 @@ const InterviewerPortal = () => {
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-                  <div className="mb-4 flex items-center gap-2 text-[var(--text-headers)]">
-                    <FileText size={18} />
-                    <h3 className="text-lg font-bold">Structured evaluation</h3>
+                {selectedCandidate.hasSubmittedFeedback || submittedCandidateIds.includes(selectedCandidate.id) ? (
+                  <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 flex flex-col items-center justify-center text-center">
+                    <ShieldCheck size={48} className="text-emerald-500 mb-4" />
+                    <h3 className="text-xl font-bold text-[var(--text-headers)]">Feedback is given</h3>
+                    <p className="mt-2 text-[var(--text-muted)]">You have already evaluated this candidate for this stage. The HR team has been notified.</p>
                   </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+                    <div className="mb-4 flex items-center gap-2 text-[var(--text-headers)]">
+                      <FileText size={18} />
+                      <h3 className="text-lg font-bold">Structured evaluation</h3>
+                    </div>
 
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-[var(--text-headers)]">Score out of 10</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={score}
-                        onChange={(e) => setScore(e.target.value)}
-                        className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 outline-none focus:border-emerald-400"
-                        required
-                      />
-                    </label>
+                    <div className="grid gap-4">
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium text-[var(--text-headers)]">Score out of 10</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={score}
+                          onChange={(e) => setScore(e.target.value)}
+                          className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 outline-none focus:border-emerald-400"
+                          required
+                        />
+                      </label>
 
-                    <label className="grid gap-2">
-                      <span className="text-sm font-medium text-[var(--text-headers)]">Feedback comments</span>
-                      <textarea
-                        rows="6"
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 outline-none focus:border-emerald-400"
-                        required
-                      />
-                    </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium text-[var(--text-headers)]">Feedback comments</span>
+                        <textarea
+                          rows="6"
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                          className="rounded-xl border border-[var(--border-color)] bg-transparent px-3 py-2.5 outline-none focus:border-emerald-400"
+                          required
+                        />
+                      </label>
 
-                    <button type="submit" className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white">
-                      Submit assessment
-                    </button>
-                  </div>
-                </form>
+                      <button type="submit" className="rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white">
+                        Submit assessment
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </section>
           ) : (
