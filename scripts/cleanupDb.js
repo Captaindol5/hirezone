@@ -19,61 +19,48 @@ async function cleanDatabase() {
   console.log('Authenticating as HR...');
   await signInWithEmailAndPassword(auth, 'naveen@hirezone.com', 'Naveen@123');
 
-  const jobId = 'CoVZ0M5pVWA8AgErmWFz';
-  const jobRef = doc(db, 'jobs', jobId);
-  const jobSnap = await getDoc(jobRef);
-  const currentCandidates = jobSnap.data().candidates || [];
-
-  const navinOriginal = currentCandidates.find(c => c.name.includes('Navin')) || {};
-  const georgeOriginal = currentCandidates.find(c => c.name.includes('George Smith')) || {};
-
-  const cleanNavin = {
-    ...navinOriginal,
-    id: 'candidate-1790098023537-qdo92',
-    name: 'Navin Manathunga',
-    email: 'naveenmanathunga6@gmail.com',
-    stage: 'initial-interview',
-    stageLabel: 'Initial Interview',
-    status: 'Ready',
-    hasSubmittedFeedback: false,
-    score: 0,
-    feedback: '',
-  };
-
-  const cleanGeorge = {
-    ...georgeOriginal,
-    id: 'candidate-1790103551153-xv1k2',
-    name: 'George Smith',
-    email: 'nubaidhahamed2006@gmail.com',
-    stage: 'initial-interview',
-    stageLabel: 'Initial Interview',
-    status: 'Applied',
-    hasSubmittedFeedback: false,
-    score: 0,
-    feedback: '',
-    aiScore: 98,
-  };
-
-  // Reset jobs candidates array to 2 canonical candidates
-  await updateDoc(jobRef, {
-    candidates: [cleanNavin, cleanGeorge]
-  });
-
-  // Ensure documents exist in candidates collection
-  await setDoc(doc(db, 'candidates', cleanNavin.id), cleanNavin, { merge: true });
-  await setDoc(doc(db, 'candidates', cleanGeorge.id), cleanGeorge, { merge: true });
-
-  // Delete leftover test duplicates
-  const allCandDocs = await getDocs(collection(db, 'candidates'));
-  let deletedCount = 0;
-  for (const d of allCandDocs.docs) {
-    if (d.id !== cleanNavin.id && d.id !== cleanGeorge.id) {
-      await deleteDoc(doc(db, 'candidates', d.id)).catch(() => {});
-      deletedCount++;
+  try {
+    const jobsSnapshot = await getDocs(collection(db, 'jobs'));
+    
+    // Wipe all candidates from all jobs
+    for (const docSnap of jobsSnapshot.docs) {
+      try {
+        await updateDoc(doc(db, 'jobs', docSnap.id), { candidates: [] });
+      } catch (e) {
+        console.error(`Failed to update job ${docSnap.id}:`, e.message);
+      }
     }
+  } catch (e) {
+    console.error('Failed to get jobs:', e.message);
   }
 
-  console.log(`Database cleaned successfully! Kept 2 canonical candidates (Navin & George). Removed ${deletedCount} duplicates.`);
+  // Delete all candidate docs
+  let deletedCount = 0;
+  try {
+    const allCandDocs = await getDocs(collection(db, 'candidates'));
+    for (const d of allCandDocs.docs) {
+      try {
+        await deleteDoc(doc(db, 'candidates', d.id));
+        deletedCount++;
+      } catch (e) {}
+    }
+  } catch (e) {
+    console.error('Failed to clear candidates:', e.message);
+  }
+
+  // Wipe all notifications
+  try {
+    const allNotifs = await getDocs(collection(db, 'notifications'));
+    for (const n of allNotifs.docs) {
+      try {
+        await deleteDoc(doc(db, 'notifications', n.id));
+      } catch (e) {}
+    }
+  } catch (e) {
+    console.error('Failed to clear notifications:', e.message);
+  }
+
+  console.log(`Database cleaned successfully! Cleared all candidates from jobs and removed ${deletedCount} candidate profiles.`);
   process.exit(0);
 }
 

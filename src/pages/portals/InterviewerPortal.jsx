@@ -56,7 +56,12 @@ const InterviewerPortal = () => {
     (job.candidates || [])
       .filter((candidate) => {
         const currentStage = (job.stages || []).find((stage) => stage.id === candidate.stage);
-        return currentStage?.interviewer === activeInterviewerId;
+        return (
+          currentStage?.interviewer === activeInterviewerId &&
+          candidate.status !== 'Failed' &&
+          candidate.status !== 'Hired' &&
+          !candidate.hasSubmittedFeedback
+        );
       })
       .map((candidate) => ({ 
         ...candidate, 

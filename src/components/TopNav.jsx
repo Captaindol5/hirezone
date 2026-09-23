@@ -29,8 +29,9 @@ const TopNav = () => {
   ];
 
   return (
-    <header className="topbar relative z-50 w-full bg-white/80 dark:bg-[#0f1115]/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 transition-colors">
-      <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 md:px-8 py-3.5 sm:py-5">
+    <div className="pt-6 px-4 sm:px-6 w-full flex justify-center sticky top-0 z-50 pointer-events-none">
+      <header className="w-full max-w-5xl bg-white/90 dark:bg-[#0f1115]/90 backdrop-blur-md border border-gray-200 dark:border-gray-800 rounded-full shadow-lg transition-colors pointer-events-auto">
+        <div className="flex items-center justify-between px-6 py-3.5 sm:py-4">
         
         {/* Left: Logo */}
         <div className="flex items-center">
@@ -139,6 +140,7 @@ const TopNav = () => {
         </div>
       )}
     </header>
+    </div>
   );
 };
 

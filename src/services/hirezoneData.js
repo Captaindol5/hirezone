@@ -406,7 +406,7 @@ export const submitCandidateFeedback = async (jobId, candidateId, payload) => {
     }
     // Also notify HR team about the completed evaluation
     createNotification(
-      '1mIpbjxAPBX0kNii8XrjlXmIwdr2',
+      'all_hr',
       `Interviewer submitted feedback for ${targetCandidate.name} (Score: ${payload.score || ''}/10)`,
       'feedback_ready'
     );
@@ -688,7 +688,7 @@ export const subscribeToNotifications = (uid, callback) => {
   if (!hasFirestore() || !uid) return () => {};
   const q = query(
     collection(db, 'notifications'),
-    where('recipientUid', '==', uid)
+    where('recipientUid', 'in', [uid, 'all_hr'])
   );
   return onSnapshot(q, (snapshot) => {
     const notifs = snapshot.docs
