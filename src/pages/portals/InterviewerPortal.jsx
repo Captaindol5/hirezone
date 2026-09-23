@@ -59,7 +59,9 @@ const InterviewerPortal = () => {
         return (
           currentStage?.interviewer === activeInterviewerId &&
           candidate.status !== 'Failed' &&
-          candidate.status !== 'Hired'
+          candidate.status !== 'Hired' &&
+          candidate.hasSubmittedFeedback !== true &&
+          !submittedCandidateIds.includes(candidate.id)
         );
       })
       .map((candidate) => ({ 
@@ -96,7 +98,7 @@ const InterviewerPortal = () => {
   return (
     <PortalLayout title="Interviewer Portal" subtitle={`Assigned stage: ${assignedInterviewer?.stage || 'Interview stage'}`} profileName={assignedInterviewer?.name || 'Interviewer'}>
       <div className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 backdrop-blur-2xl p-8 shadow-2xl shadow-black/5">
+        <aside className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 shadow-lg">
           <div className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Queue</p>
             <h2 className="mt-1 text-xl font-bold text-[var(--text-headers)]">Candidates for review</h2>
@@ -134,7 +136,7 @@ const InterviewerPortal = () => {
           )}
 
           {selectedCandidate ? (
-            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 backdrop-blur-2xl p-8 shadow-2xl shadow-black/5 flex flex-col h-full">
+            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 shadow-lg flex flex-col h-full">
               <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Candidate profile</p>

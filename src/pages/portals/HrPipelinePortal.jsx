@@ -850,7 +850,7 @@ const HrPipelinePortal = () => {
 
           {/* ───── Kanban Board Tab ───── */}
           {activeTab === 'kanban' && (
-            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 p-8 shadow-2xl shadow-black/5 backdrop-blur-2xl dark:bg-black/40 overflow-hidden">
+            <section className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] p-8 shadow-lg dark:bg-slate-900 overflow-hidden">
               {renderJobSelector()}
               <div className="mb-6 flex items-center justify-between gap-3">
                 <div>
@@ -860,9 +860,9 @@ const HrPipelinePortal = () => {
                 <span className="rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-600">{selectedJob?.stages.length || 0} stages</span>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-4">
+              <div className="flex gap-4 overflow-x-auto pb-2">
                 {selectedJob?.stages.map((stage, index) => (
-                  <div key={stage.id} className="min-h-[300px] rounded-[2rem] border border-[var(--border-color)] bg-[var(--bg-primary)]/50 p-4">
+                  <div key={stage.id} className="min-h-[300px] w-64 flex-shrink-0 rounded-[2rem] border border-[var(--border-color)] bg-[var(--bg-primary)]/50 p-4">
                     <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--border-color)] pb-4">
                       <h3 className="font-bold text-[var(--text-headers)] text-lg">{stage.name}</h3>
                       <span className="rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] px-3 py-1 text-xs font-bold text-[var(--text-muted)]">
