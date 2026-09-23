@@ -170,7 +170,7 @@ const JobApplicationPage = () => {
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-headers)] mb-4 tracking-tight">Application Submitted!</h1>
           <p className="text-[var(--text-muted)] text-lg mb-8 leading-relaxed font-medium">
-            Thank you for applying for <strong className="text-[var(--text-headers)]">{job.title}</strong> at ALTRIUM.<br />
+            Thank you for applying for <strong className="text-[var(--text-headers)]">{job.title}</strong> at HireZone.<br />
             We have instantly evaluated your profile and our hiring team will reach out if you advance.
           </p>
 

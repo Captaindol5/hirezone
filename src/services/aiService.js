@@ -26,7 +26,7 @@ export const evaluateApplication = async (jobTitle, cvText, qnaList) => {
     });
 
     const systemPrompt = `
-You are a sharp, professional technical recruiter for ALTRIUM.
+You are a sharp, professional technical recruiter for HireZone.
 The candidate is applying for the role of: "${jobTitle}".
 
 Here is their CV / Resume text:

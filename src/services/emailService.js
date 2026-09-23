@@ -24,7 +24,7 @@ const send = async ({ toEmail, candidateName, subject, message }) => {
         candidate_name: candidateName,
         subject,
         message,
-        name: 'ALTRIUM Hiring Team',  // → {{name}} From Name in your template
+        name: 'HireZone Hiring Team',  // → {{name}} From Name in your template
         email: toEmail,               // → {{email}} Reply To in your template
       },
       PUBLIC_KEY
@@ -44,7 +44,7 @@ export const sendStageAdvancedEmail = ({ candidateName, toEmail, jobTitle, stage
     toEmail,
     candidateName,
     subject: `You've been selected — ${stageName} | ${jobTitle}`,
-    message: `You have been selected to proceed in the hiring process for the role of ${jobTitle} at ALTRIUM.\n\nYour next step: ${stageName}\n\nOur team will be in contact with further details about the schedule and format.`,
+    message: `You have been selected to proceed in the hiring process for the role of ${jobTitle} at HireZone.\n\nYour next step: ${stageName}\n\nOur team will be in contact with further details about the schedule and format.`,
   });
 
 /**
@@ -55,7 +55,7 @@ export const sendHiredEmail = ({ candidateName, toEmail, jobTitle, startDate, of
     toEmail,
     candidateName,
     subject: `Congratulations! You've been hired — ${jobTitle}`,
-    message: `We are thrilled to offer you the position of ${jobTitle} at ALTRIUM. 🎉\n\nStart Date: ${startDate || 'To be confirmed'}\n\n${offerNotes || 'Our HR team will be in touch with your onboarding details.'}\n\nWelcome to the team!`,
+    message: `We are thrilled to offer you the position of ${jobTitle} at HireZone. 🎉\n\nStart Date: ${startDate || 'To be confirmed'}\n\n${offerNotes || 'Our HR team will be in touch with your onboarding details.'}\n\nWelcome to the team!`,
   });
 
 /**
@@ -66,7 +66,7 @@ export const sendRejectedEmail = ({ candidateName, toEmail, jobTitle }) =>
     toEmail,
     candidateName,
     subject: `Update on your application — ${jobTitle}`,
-    message: `Thank you for taking the time to apply for the ${jobTitle} position at ALTRIUM and for going through our interview process.\n\nAfter careful consideration, we have decided not to move forward with your application at this time.\n\nWe truly appreciate your interest and encourage you to apply for future openings that match your profile.\n\nWishing you all the best!`,
+    message: `Thank you for taking the time to apply for the ${jobTitle} position at HireZone and for going through our interview process.\n\nAfter careful consideration, we have decided not to move forward with your application at this time.\n\nWe truly appreciate your interest and encourage you to apply for future openings that match your profile.\n\nWishing you all the best!`,
   });
 
 /**
@@ -88,5 +88,5 @@ export const sendCandidateWelcomeEmail = ({ candidateName, toEmail, jobTitle }) 
     toEmail,
     candidateName,
     subject: `Application received — ${jobTitle}`,
-    message: `Thank you for applying for the ${jobTitle} position at ALTRIUM.\n\nWe have received your application and our team will review it. If you are selected, you will receive an email with next steps.\n\nThank you for your interest!`,
+    message: `Thank you for applying for the ${jobTitle} position at HireZone.\n\nWe have received your application and our team will review it. If you are selected, you will receive an email with next steps.\n\nThank you for your interest!`,
   });

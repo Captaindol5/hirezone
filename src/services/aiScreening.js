@@ -24,7 +24,7 @@ export const screenCandidateCv = async (jobTitle, jobDepartment, cvText) => {
   }
 
   const prompt = `
-You are a strict, expert HR recruiter screening CVs for ALTRIUM.
+You are a strict, expert HR recruiter screening CVs for HireZone.
 The open role is: "${jobTitle}" in the "${jobDepartment}" department.
 
 Here is the candidate's CV text:
