@@ -258,6 +258,15 @@ const HrPipelinePortal = () => {
       return;
     }
 
+    const job = data.jobs.find(j => j.id === candidateForm.jobId);
+    if (job) {
+      const stageCandidates = (job.candidates || []).filter(c => c.stage === candidateForm.stageId && c.status !== 'Failed' && c.status !== 'Hired');
+      if (stageCandidates.length >= 10) {
+        setError('This stage has reached its limit of 10 candidates. Please move or fail existing candidates before adding new ones.');
+        return;
+      }
+    }
+
     try {
       await createCandidateProfile({
         name: candidateForm.name,
@@ -308,15 +317,21 @@ const HrPipelinePortal = () => {
   };
 
   const handleSmartFail = (candidate) => {
-    if (candidate.score >= 7) {
-      if (!window.confirm(`This candidate has a high score of ${candidate.score}/10. Are you sure you want to fail them?`)) return;
+    const job = data.jobs.find(j => j.id === candidate.jobId) || selectedJob;
+    const threshold = (job?.passingThreshold || 70) / 10;
+    
+    if (candidate.score >= threshold) {
+      if (!window.confirm(`This candidate scored ${candidate.score}/10, which meets the passing threshold of ${threshold}/10. Are you sure you want to fail them?`)) return;
     }
     handleFailCandidate(candidate.id);
   };
 
   const handleSmartAdvance = (candidate, stageIndex) => {
-    if (candidate.score < 5) {
-      if (!window.confirm(`This candidate has a low score of ${candidate.score}/10. Are you sure you want to advance them?`)) return;
+    const job = data.jobs.find(j => j.id === candidate.jobId) || selectedJob;
+    const threshold = (job?.passingThreshold || 70) / 10;
+
+    if (candidate.score < threshold) {
+      if (!window.confirm(`This candidate scored ${candidate.score}/10, which is below the passing threshold of ${threshold}/10. Are you sure you want to advance them?`)) return;
     }
     
     if (!selectedJob) return;
@@ -961,7 +976,14 @@ const HrPipelinePortal = () => {
               </div>
               <div className="rounded-2xl border border-[var(--border-color)] bg-white p-4 dark:bg-slate-900">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Interviewer Score</p>
-                <p className="mt-1 text-3xl font-black text-[var(--text-headers)]">{viewingCandidate.hasSubmittedFeedback ? `${viewingCandidate.score} / 10` : 'N/A'}</p>
+                <div className="flex items-center gap-4 mt-1">
+                  <p className="text-3xl font-black text-[var(--text-headers)]">{viewingCandidate.hasSubmittedFeedback ? `${viewingCandidate.score} / 10` : 'N/A'}</p>
+                  {viewingCandidate.hasSubmittedFeedback && (
+                    <span className="text-sm font-semibold text-slate-400">
+                      (Passing Threshold: {(selectedJob?.passingThreshold || 70) / 10}/10)
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="rounded-2xl border border-[var(--border-color)] bg-white p-4 dark:bg-slate-900">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Feedback notes</p>
