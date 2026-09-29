@@ -307,6 +307,32 @@ const HrPipelinePortal = () => {
     }
   };
 
+  const handleSmartFail = (candidate) => {
+    if (candidate.score >= 7) {
+      if (!window.confirm(`This candidate has a high score of ${candidate.score}/10. Are you sure you want to fail them?`)) return;
+    }
+    handleFailCandidate(candidate.id);
+  };
+
+  const handleSmartAdvance = (candidate, stageIndex) => {
+    if (candidate.score < 5) {
+      if (!window.confirm(`This candidate has a low score of ${candidate.score}/10. Are you sure you want to advance them?`)) return;
+    }
+    
+    if (!selectedJob) return;
+    const nextStage = selectedJob.stages[stageIndex + 1];
+    if (nextStage) {
+      const nextStageCandidates = (selectedJob.candidates || []).filter(c => c.stage === nextStage.id && c.status !== 'Failed' && c.status !== 'Hired');
+      if (nextStageCandidates.length >= 10) {
+        alert(`The next stage (${nextStage.name}) is full (limit: 10 candidates). You cannot advance more candidates into it right now.`);
+        return;
+      }
+    }
+    
+    advanceCandidate(candidate.id, stageIndex);
+  };
+
+
   const renderJobSelector = () => (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900/30 dark:bg-indigo-900/10">
       <BriefcaseBusiness size={18} className="text-indigo-500" />
@@ -951,7 +977,7 @@ const HrPipelinePortal = () => {
               {viewingCandidate.hasSubmittedFeedback ? (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleFailCandidate(viewingCandidate.id)}
+                    onClick={() => handleSmartFail(viewingCandidate)}
                     disabled={readOnly}
                     className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${!readOnly ? 'bg-red-500 hover:bg-red-600' : 'cursor-not-allowed bg-red-300 dark:bg-red-900/50 dark:text-red-300'}`}
                   >
@@ -967,7 +993,7 @@ const HrPipelinePortal = () => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => advanceCandidate(viewingCandidate.id, viewingCandidateStageIndex)}
+                      onClick={() => handleSmartAdvance(viewingCandidate, viewingCandidateStageIndex)}
                       disabled={readOnly}
                       className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition ${!readOnly ? 'bg-orange-500 hover:bg-orange-600' : 'cursor-not-allowed bg-orange-300 dark:bg-orange-900/50 dark:text-orange-300'}`}
                     >

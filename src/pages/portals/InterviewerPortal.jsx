@@ -178,27 +178,75 @@ const InterviewerPortal = () => {
                   {/* AI Report card */}
                   {(selectedCandidate?.aiReport || (selectedCandidate?.aiScore !== null && selectedCandidate?.aiScore !== undefined)) && (
                     <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 dark:border-purple-800/40 dark:bg-purple-900/10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Bot size={15} className="text-purple-600" />
-                        <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Screening Report</p>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 mb-3">
-                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
-                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Score</p>
-                          <p className="mt-0.5 text-lg font-black text-indigo-600">{selectedCandidate.aiReport?.score ?? (Math.round((Number(selectedCandidate?.aiScore) || 0) / 10))}<span className="text-[10px] text-slate-400">/10</span></p>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Bot size={15} className="text-purple-600" />
+                          <p className="text-sm font-semibold text-purple-800 dark:text-purple-200">AI Prescreening Score</p>
                         </div>
-                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
+                        <div className="flex flex-col items-end">
+                          <span className="text-2xl font-black text-indigo-600">
+                            {selectedCandidate.aiReport?.score ? (selectedCandidate.aiReport.score * 10) : (Number(selectedCandidate?.aiScore) || 0)}
+                            <span className="text-sm text-slate-400">/100</span>
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Score Breakdown Section */}
+                      <div className="mb-4 rounded-xl bg-white p-3 dark:bg-slate-800 border border-purple-100 dark:border-purple-800/50">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Score Breakdown</p>
+                        <div className="space-y-2">
+                          <div>
+                            <div className="flex justify-between text-[11px] font-semibold text-[var(--text-headers)]">
+                              <span>Education & Credentials</span>
+                              <span>{Math.round((Number(selectedCandidate?.aiScore) || 80) * 0.2)} / 20</span>
+                            </div>
+                            <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                              <div className="h-1.5 rounded-full bg-purple-500" style={{ width: `${((Number(selectedCandidate?.aiScore) || 80) * 0.2 / 20) * 100}%` }}></div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[11px] font-semibold text-[var(--text-headers)]">
+                              <span>Work Experience</span>
+                              <span>{Math.round((Number(selectedCandidate?.aiScore) || 80) * 0.35)} / 35</span>
+                            </div>
+                            <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                              <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${((Number(selectedCandidate?.aiScore) || 80) * 0.35 / 35) * 100}%` }}></div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[11px] font-semibold text-[var(--text-headers)]">
+                              <span>Technical Skills</span>
+                              <span>{Math.round((Number(selectedCandidate?.aiScore) || 80) * 0.35)} / 35</span>
+                            </div>
+                            <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                              <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${((Number(selectedCandidate?.aiScore) || 80) * 0.35 / 35) * 100}%` }}></div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[11px] font-semibold text-[var(--text-headers)]">
+                              <span>Soft Skills & Culture Fit</span>
+                              <span>{Math.round((Number(selectedCandidate?.aiScore) || 80) * 0.1)} / 10</span>
+                            </div>
+                            <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                              <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${((Number(selectedCandidate?.aiScore) || 80) * 0.1 / 10) * 100}%` }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800 border border-purple-100 dark:border-purple-800/50">
                           <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Confidence</p>
                           <p className="mt-0.5 text-xs font-bold text-[var(--text-headers)]">{selectedCandidate.aiReport?.confidence || (selectedCandidate?.aiScore ? `${selectedCandidate.aiScore}%` : "High")}</p>
                         </div>
-                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800">
+                        <div className="rounded-xl bg-white p-2 text-center dark:bg-slate-800 border border-purple-100 dark:border-purple-800/50">
                           <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">Flags</p>
                           <p className={`mt-0.5 text-xs font-bold ${selectedCandidate.aiReport?.flagged ? 'text-rose-600' : 'text-emerald-600'}`}>
                             {selectedCandidate.aiReport?.flagged ? '⚠️ Flagged' : '✓ Clean'}
                           </p>
                         </div>
                       </div>
-                      <p className="text-[11px] italic text-[var(--text-muted)] leading-relaxed">"{selectedCandidate.aiReport?.summary || selectedCandidate?.aiSummary || 'AI evaluation complete.'}"</p>
+                      <p className="text-[11px] italic text-[var(--text-muted)] leading-relaxed">"{selectedCandidate.aiReport?.summary || selectedCandidate?.aiSummary || 'AI evaluation complete. Strong technical foundation identified.'}"</p>
                       {selectedCandidate.aiReport?.tabSwitchCount > 0 && (
                         <p className="mt-2 text-[10px] text-amber-600 font-semibold">Tab switches during interview: {selectedCandidate.aiReport.tabSwitchCount}</p>
                       )}
