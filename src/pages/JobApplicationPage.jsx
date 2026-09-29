@@ -115,7 +115,7 @@ const JobApplicationPage = () => {
         name: form.name.trim(),
         email: form.email.trim(),
         jobId: job.id,
-        stageId: job.stages[0].id,
+        stageId: 'Inbox',
         cvText: extractedText,
         source: 'self-apply',
         aiScore: score,

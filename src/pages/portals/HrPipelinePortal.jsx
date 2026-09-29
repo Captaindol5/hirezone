@@ -18,12 +18,16 @@ import {
   List,
   Users,
   X,
+  Inbox,
+  PhoneCall,
+  UserX
 } from 'lucide-react';
 import PortalLayout from '../../components/PortalLayout';
 import ErrorModal from '../../components/ErrorModal';
 import SuccessModal from '../../components/SuccessModal';
 import LoadingState from '../../components/LoadingState';
 import { useAuth } from '../../context/AuthContext';
+import { sendStageAdvancedEmail, sendRejectedEmail } from '../../services/emailService';
 import {
   createCandidateProfile,
   fetchJobs,
@@ -46,6 +50,7 @@ const EMPTY_STAGE = { name: '', interviewerId: '' };
 const tabs = [
   { key: 'jobs', label: 'Jobs', icon: BriefcaseBusiness },
   { key: 'assignments', label: 'Assign interviewers', icon: Users },
+  { key: 'applications', label: 'Applications Inbox', icon: Inbox },
   { key: 'directory', label: 'Candidates status', icon: List },
   { key: 'kanban', label: 'Kanban board', icon: Columns3 },
 ];
@@ -394,6 +399,53 @@ const HrPipelinePortal = () => {
     } catch (err) {
       console.error(err);
       setError('Failed to hire candidate.');
+    }
+  };
+
+  const handleCallCandidate = async (candidate) => {
+    if (!selectedJob || !selectedJob.stages || selectedJob.stages.length === 0) {
+      setError('This job has no interview stages. Create a stage first.');
+      return;
+    }
+    
+    const firstStage = selectedJob.stages[0];
+    const firstStageCandidates = (selectedJob.candidates || []).filter(c => c.stage === firstStage.id && c.status !== 'Failed' && c.status !== 'Hired');
+    
+    if (firstStageCandidates.length >= 10) {
+      setError(`The first stage (${firstStage.name}) is full (limit: 10 candidates). Please move existing candidates before calling more.`);
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to call ${candidate.name} and move them to the Kanban board? An email will be sent to them.`)) return;
+
+    try {
+      await advanceCandidateStage(selectedJob.id, candidate.id, firstStage.id);
+      await sendStageAdvancedEmail({
+        candidateName: candidate.name,
+        toEmail: candidate.email,
+        jobTitle: selectedJob.title,
+        stageName: firstStage.name
+      });
+      setSuccess(`${candidate.name} has been moved to the Kanban board and notified.`);
+    } catch (err) {
+      setError('Failed to call candidate: ' + err.message);
+    }
+  };
+
+  const handleRejectApplicant = async (candidate) => {
+    if (!selectedJob) return;
+    if (!window.confirm(`Are you sure you want to reject ${candidate.name}? A rejection email will be sent.`)) return;
+
+    try {
+      await failCandidate(selectedJob.id, candidate.id);
+      await sendRejectedEmail({
+        candidateName: candidate.name,
+        toEmail: candidate.email,
+        jobTitle: selectedJob.title
+      });
+      setSuccess(`${candidate.name} has been rejected and notified.`);
+    } catch (err) {
+      setError('Failed to reject candidate: ' + err.message);
     }
   };
 
@@ -817,6 +869,84 @@ const HrPipelinePortal = () => {
               </div>
 
               {/* Directory tab will handle the candidate records */}
+            </section>
+          )}
+
+          {/* ───── Applications Inbox Tab ───── */}
+          {activeTab === 'applications' && (
+            <section className="space-y-6">
+              <div className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)]/60 p-8 shadow-2xl shadow-black/5 backdrop-blur-2xl dark:bg-black/40">
+                {renderJobSelector()}
+                <div className="mb-6 border-b border-[var(--border-color)] pb-4 flex justify-between items-end">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Pre-Kanban Screening</p>
+                    <h2 className="mt-1 text-2xl font-bold text-[var(--text-headers)]">New Applications Inbox</h2>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {(() => {
+                    const inboxCandidates = (selectedJob?.candidates || [])
+                      .filter(c => c.stage === 'Inbox' && c.status !== 'Failed' && c.status !== 'Hired')
+                      .sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0));
+
+                    if (inboxCandidates.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)]/50 p-12 text-center">
+                          <Inbox size={48} className="text-[var(--text-muted)] opacity-30 mb-2" />
+                          <p className="text-lg font-bold text-[var(--text-headers)]">Inbox is empty</p>
+                          <p className="text-sm text-[var(--text-muted)]">No new applications are waiting for review right now.</p>
+                        </div>
+                      );
+                    }
+
+                    return inboxCandidates.map((candidate) => (
+                      <div key={candidate.id} className="rounded-3xl border border-[var(--border-color)] bg-white p-5 shadow-lg shadow-black/5 dark:bg-slate-900 transition-all hover:border-orange-500/50 hover:shadow-orange-500/10">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-lg font-black text-white shadow-md">
+                              {candidate.name?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <div>
+                              <p className="text-xl font-bold text-[var(--text-headers)]">{candidate.name}</p>
+                              <p className="text-sm font-medium text-[var(--text-muted)]">{candidate.email} {candidate.notes ? `• ${candidate.notes}` : ''}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-wrap items-center gap-4 lg:gap-6">
+                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 px-4 py-2 text-center dark:border-indigo-900/30 dark:bg-indigo-900/20">
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500/70">AI Prescreen</p>
+                              <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">{Math.round(candidate.aiScore || 0)}<span className="text-sm text-indigo-400/50">/100</span></p>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleRejectApplicant(candidate)}
+                                disabled={readOnly}
+                                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${!readOnly ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40' : 'cursor-not-allowed opacity-50'}`}
+                              >
+                                <UserX size={16} /> Reject
+                              </button>
+                              <button
+                                onClick={() => handleCallCandidate(candidate)}
+                                disabled={readOnly}
+                                className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md transition ${!readOnly ? 'bg-orange-500 hover:bg-orange-600 hover:-translate-y-0.5' : 'cursor-not-allowed opacity-50 bg-orange-300'}`}
+                              >
+                                <PhoneCall size={16} /> Call to Interview
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        {candidate.aiSummary && (
+                          <div className="mt-4 rounded-xl bg-[var(--bg-secondary)] p-3 text-sm italic text-[var(--text-muted)] border border-[var(--border-color)]">
+                            "{candidate.aiSummary}"
+                          </div>
+                        )}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
             </section>
           )}
 
