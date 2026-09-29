@@ -83,6 +83,7 @@ const HrPipelinePortal = () => {
   const [viewingCandidate, setViewingCandidate] = useState(null);
   const [viewingCandidateStageIndex, setViewingCandidateStageIndex] = useState(-1);
   const [offerModal, setOfferModal] = useState({ open: false, candidateId: null, startDate: '', offerNotes: '' });
+  const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', action: null, confirmText: 'Confirm', confirmStyle: '' });
 
   useEffect(() => {
     const unsubJobs = subscribeToJobs((latestJobs) => {
@@ -162,21 +163,25 @@ const HrPipelinePortal = () => {
 
   const handleDeleteJob = async (jobId) => {
     if (!jobId) return;
-    if (!window.confirm('Are you sure you want to delete this role? All associated stages and candidates will also be unlinked or lost.')) return;
-    try {
-      await deleteJob(jobId);
-      if (selectedJob?.id === jobId) {
-        setSelectedJobId('');
+    setConfirmModal({
+      open: true,
+      title: 'Delete Role',
+      message: 'Are you sure you want to delete this role? All associated stages and candidates will also be unlinked or lost.',
+      confirmText: 'Delete Role',
+      confirmStyle: 'bg-red-500 hover:bg-red-600',
+      action: async () => {
+        try {
+          await deleteJob(jobId);
+          if (selectedJob?.id === jobId) setSelectedJobId('');
+          if (viewingJobDetails?.id === jobId) setViewingJobDetails(null);
+          setError('');
+          setSuccess('Role deleted successfully.');
+        } catch (err) {
+          console.error('Job deletion failed:', err);
+          setError('The job could not be deleted.');
+        }
       }
-      if (viewingJobDetails?.id === jobId) {
-        setViewingJobDetails(null);
-      }
-      setError('');
-      setSuccess('Role deleted successfully.');
-    } catch (err) {
-      console.error('Job deletion failed:', err);
-      setError('The job could not be deleted.');
-    }
+    });
   };
 
   const addStage = async () => {
@@ -326,30 +331,45 @@ const HrPipelinePortal = () => {
     const threshold = (job?.passingThreshold || 70) / 10;
     
     if (candidate.score >= threshold) {
-      if (!window.confirm(`This candidate scored ${candidate.score}/10, which meets the passing threshold of ${threshold}/10. Are you sure you want to fail them?`)) return;
+      setConfirmModal({
+        open: true,
+        title: 'High Score Warning',
+        message: `This candidate scored ${candidate.score}/10, which meets the passing threshold of ${threshold}/10. Are you sure you want to fail them?`,
+        confirmText: 'Yes, Fail Candidate',
+        confirmStyle: 'bg-red-500 hover:bg-red-600',
+        action: () => handleFailCandidate(candidate.id)
+      });
+    } else {
+      handleFailCandidate(candidate.id);
     }
-    handleFailCandidate(candidate.id);
   };
 
   const handleSmartAdvance = (candidate, stageIndex) => {
     const job = data.jobs.find(j => j.id === candidate.jobId) || selectedJob;
     const threshold = (job?.passingThreshold || 70) / 10;
 
-    if (candidate.score < threshold) {
-      if (!window.confirm(`This candidate scored ${candidate.score}/10, which is below the passing threshold of ${threshold}/10. Are you sure you want to advance them?`)) return;
-    }
-    
     if (!selectedJob) return;
     const nextStage = selectedJob.stages[stageIndex + 1];
     if (nextStage) {
       const nextStageCandidates = (selectedJob.candidates || []).filter(c => c.stage === nextStage.id && c.status !== 'Failed' && c.status !== 'Hired');
       if (nextStageCandidates.length >= 10) {
-        alert(`The next stage (${nextStage.name}) is full (limit: 10 candidates). You cannot advance more candidates into it right now.`);
+        setError(`The next stage (${nextStage.name}) is full (limit: 10 candidates). You cannot advance more candidates into it right now.`);
         return;
       }
     }
-    
-    advanceCandidate(candidate.id, stageIndex);
+
+    if (candidate.score < threshold) {
+      setConfirmModal({
+        open: true,
+        title: 'Low Score Warning',
+        message: `This candidate scored ${candidate.score}/10, which is below the passing threshold of ${threshold}/10. Are you sure you want to advance them?`,
+        confirmText: 'Yes, Advance Candidate',
+        confirmStyle: 'bg-orange-500 hover:bg-orange-600',
+        action: () => advanceCandidate(candidate.id, stageIndex)
+      });
+    } else {
+      advanceCandidate(candidate.id, stageIndex);
+    }
   };
 
 
@@ -416,37 +436,52 @@ const HrPipelinePortal = () => {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to call ${candidate.name} and move them to the Kanban board? An email will be sent to them.`)) return;
-
-    try {
-      await advanceCandidateStage(selectedJob.id, candidate.id, firstStage.id);
-      await sendStageAdvancedEmail({
-        candidateName: candidate.name,
-        toEmail: candidate.email,
-        jobTitle: selectedJob.title,
-        stageName: firstStage.name
-      });
-      setSuccess(`${candidate.name} has been moved to the Kanban board and notified.`);
-    } catch (err) {
-      setError('Failed to call candidate: ' + err.message);
-    }
+    setConfirmModal({
+      open: true,
+      title: 'Call to Interview',
+      message: `Are you sure you want to call ${candidate.name} and move them to the Kanban board? An email will be sent to them.`,
+      confirmText: 'Call Candidate',
+      confirmStyle: 'bg-emerald-500 hover:bg-emerald-600',
+      action: async () => {
+        try {
+          await advanceCandidateStage(selectedJob.id, candidate.id, firstStage.id);
+          await sendStageAdvancedEmail({
+            candidateName: candidate.name,
+            toEmail: candidate.email,
+            jobTitle: selectedJob.title,
+            stageName: firstStage.name
+          });
+          setSuccess(`${candidate.name} has been moved to the Kanban board and notified.`);
+        } catch (err) {
+          setError('Failed to call candidate: ' + err.message);
+        }
+      }
+    });
   };
 
   const handleRejectApplicant = async (candidate) => {
     if (!selectedJob) return;
-    if (!window.confirm(`Are you sure you want to reject ${candidate.name}? A rejection email will be sent.`)) return;
-
-    try {
-      await failCandidate(selectedJob.id, candidate.id);
-      await sendRejectedEmail({
-        candidateName: candidate.name,
-        toEmail: candidate.email,
-        jobTitle: selectedJob.title
-      });
-      setSuccess(`${candidate.name} has been rejected and notified.`);
-    } catch (err) {
-      setError('Failed to reject candidate: ' + err.message);
-    }
+    
+    setConfirmModal({
+      open: true,
+      title: 'Reject Candidate',
+      message: `Are you sure you want to reject ${candidate.name}? A rejection email will be sent.`,
+      confirmText: 'Reject Candidate',
+      confirmStyle: 'bg-red-500 hover:bg-red-600',
+      action: async () => {
+        try {
+          await failCandidate(selectedJob.id, candidate.id);
+          await sendRejectedEmail({
+            candidateName: candidate.name,
+            toEmail: candidate.email,
+            jobTitle: selectedJob.title
+          });
+          setSuccess(`${candidate.name} has been rejected and notified.`);
+        } catch (err) {
+          setError('Failed to reject candidate: ' + err.message);
+        }
+      }
+    });
   };
 
   if (isLoading) {
@@ -501,6 +536,33 @@ const HrPipelinePortal = () => {
                 className="flex-1 rounded-2xl bg-emerald-500 py-2.5 text-sm font-bold text-white shadow transition hover:bg-emerald-600"
               >
                 Confirm & Send Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Confirm Modal ─── */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border-color)] bg-white p-6 shadow-2xl dark:bg-slate-900">
+            <h2 className="text-xl font-bold text-[var(--text-headers)] mb-2">{confirmModal.title}</h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">{confirmModal.message}</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ open: false, title: '', message: '', action: null, confirmText: 'Confirm', confirmStyle: '' })}
+                className="flex-1 rounded-2xl border border-[var(--border-color)] py-2.5 text-sm font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-secondary)] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmModal.action) confirmModal.action();
+                  setConfirmModal({ open: false, title: '', message: '', action: null, confirmText: 'Confirm', confirmStyle: '' });
+                }}
+                className={`flex-1 rounded-2xl py-2.5 text-sm font-bold text-white shadow transition ${confirmModal.confirmStyle || 'bg-orange-500 hover:bg-orange-600'}`}
+              >
+                {confirmModal.confirmText}
               </button>
             </div>
           </div>
