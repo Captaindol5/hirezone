@@ -43,8 +43,8 @@ export const sendStageAdvancedEmail = ({ candidateName, toEmail, jobTitle, stage
   send({
     toEmail,
     candidateName,
-    subject: `You've been selected — ${stageName} | ${jobTitle}`,
-    message: `You have been selected to proceed in the hiring process for the role of ${jobTitle} at HireZone.\n\nYour next step: ${stageName}\n\nOur team will be in contact with further details about the schedule and format.`,
+    subject: `You've been selected for an interview — ${jobTitle}`,
+    message: `Congratulations! You have been selected for the interviews for the role of ${jobTitle} at HireZone.\n\nYour next step: ${stageName}.\n\nOur team will be in contact with further details about the schedule and format soon.`,
   });
 
 /**
@@ -66,7 +66,7 @@ export const sendRejectedEmail = ({ candidateName, toEmail, jobTitle }) =>
     toEmail,
     candidateName,
     subject: `Update on your application — ${jobTitle}`,
-    message: `Thank you for taking the time to apply for the ${jobTitle} position at HireZone and for going through our interview process.\n\nAfter careful consideration, we have decided not to move forward with your application at this time.\n\nWe truly appreciate your interest and encourage you to apply for future openings that match your profile.\n\nWishing you all the best!`,
+    message: `Thank you for taking the time to apply for the ${jobTitle} position at HireZone.\n\nAfter careful consideration, we have decided not to move forward with your application at this time.\n\nWe will notify you when there is another opening that matches your profile. Best of luck for the future!`,
   });
 
 /**
